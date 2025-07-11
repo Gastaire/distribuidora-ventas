@@ -14,7 +14,7 @@
 <body class="bg-gray-100">
     <div id="root"></div>
     <script type="text/babel">
-        const API_URL = 'https://distriapi.onzacore.site/api';
+        const API_URL = 'https://api.onzacore.site/api';
         const PackageIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z"/><path d="M19 13.3a9 9 0 1 1-14 0"/><path d="M12 17.5a2.5 2.5 0 0 1-2.5-2.5V9.4h5v5.6a2.5 2.5 0 0 1-2.5 2.5Z"/></svg>);
         const Spinner = ({ className }) => (<div className={`animate-spin rounded-full h-6 w-6 border-b-2 ${className || 'border-white'}`}></div>);
         const UsersIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
@@ -103,55 +103,45 @@
                 </div>
             );
         };
-        const PedidoView = ({ cliente, onBack, onShowCart, cart }) => {
+        const PedidoView = ({ cliente, onBack, onShowCart, cart, onProductSelect }) => {
             const [productos, setProductos] = React.useState([]);
-            const [pedido, setPedido] = React.useState(cart);
             const [searchTerm, setSearchTerm] = React.useState('');
             React.useEffect(() => {
                 const storedProductos = localStorage.getItem('productos');
                 if (storedProductos) { setProductos(JSON.parse(storedProductos)); }
             }, []);
-            const addToPedido = (producto) => {
-                if (producto.stock === 'No') {
-                    if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) {
-                        return;
-                    }
-                }
-                setPedido(currentPedido => {
-                    const existing = currentPedido.find(item => item.producto.id === producto.id);
-                    if (existing) {
-                        return currentPedido.map(item => item.producto.id === producto.id ? { ...item, cantidad: item.cantidad + 1 } : item);
-                    }
-                    return [...currentPedido, { producto, cantidad: 1 }];
-                });
-            };
-            const totalItems = pedido.reduce((acc, item) => acc + item.cantidad, 0);
-            const totalPedido = pedido.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0);
+
             const filteredProductos = productos.filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+            
             return (
                 <div className="flex flex-col h-screen bg-gray-100">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
-                        <button onClick={() => onBack(pedido)} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
+                        <button onClick={() => onBack(cart)} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
                         <div><h2 className="font-bold text-lg">{cliente.nombre_comercio}</h2><p className="text-xs text-gray-500">Nuevo Pedido</p></div>
                     </header>
                     <div className="p-4"><input type="text" placeholder="Buscar producto..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-4 py-2 mb-4 border rounded-lg"/></div>
                     <main className="flex-1 overflow-y-auto p-4 pt-0 pb-24">
                         {filteredProductos.map(producto => (
-                            <div key={producto.id} onClick={() => addToPedido(producto)} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4 active:bg-gray-200">
+                            <div key={producto.id} onClick={() => onProductSelect(producto, cart)} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4 active:bg-gray-200">
                                 <img src={producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={producto.nombre} className="w-16 h-16 rounded-md object-cover"/>
                                 <div className="flex-1">
                                     <p className="font-semibold text-gray-800">{producto.nombre}</p>
                                     <p className="text-sm text-blue-600 font-bold">${producto.precio_unitario}</p>
                                     <p className={`text-xs font-bold ${producto.stock === 'Sí' ? 'text-green-500' : 'text-red-500'}`}>Stock: {producto.stock}</p>
                                 </div>
+                                {cart.find(item => item.producto.id === producto.id) && (
+                                    <div className="bg-blue-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">
+                                        {cart.find(item => item.producto.id === producto.id).cantidad}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </main>
-                    {pedido.length > 0 && (
+                    {cart.length > 0 && (
                         <footer className="bg-white p-4 shadow-inner fixed bottom-0 w-full border-t">
-                            <button onClick={() => onShowCart(pedido)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-between items-center">
-                                <div className="flex items-center gap-2"><ShoppingCartIcon className="h-6 w-6"/><span>{totalItems} {totalItems > 1 ? 'items' : 'item'}</span></div>
-                                <span>Ver Pedido</span><span>${totalPedido}</span>
+                            <button onClick={() => onShowCart(cart)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-between items-center">
+                                <div className="flex items-center gap-2"><ShoppingCartIcon className="h-6 w-6"/><span>{cart.reduce((acc, item) => acc + item.cantidad, 0)} items</span></div>
+                                <span>Ver Pedido</span><span>${cart.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0)}</span>
                             </button>
                         </footer>
                     )}
@@ -160,14 +150,19 @@
         };
         const PedidoSummaryView = ({ cliente, pedido, setPedido, onBack, onSave, editingPedido, onCancelEdit, onAddMoreProducts }) => {
             const [notas, setNotas] = React.useState(editingPedido ? editingPedido.notas_entrega : '');
-            const updateCantidad = (productoId, cantidad) => {
-                const nuevaCantidad = Math.max(0, cantidad);
+            
+            const updateCantidad = (productoId, cantidadStr) => {
+                const cantidad = parseInt(cantidadStr, 10);
                 setPedido(currentPedido => {
-                    if (nuevaCantidad === 0) { return currentPedido.filter(item => item.producto.id !== productoId); }
-                    return currentPedido.map(item => item.producto.id === productoId ? { ...item, cantidad: nuevaCantidad } : item);
+                    if (isNaN(cantidad) || cantidad <= 0) {
+                        return currentPedido.filter(item => item.producto.id !== productoId);
+                    }
+                    return currentPedido.map(item => item.producto.id === productoId ? { ...item, cantidad: cantidad } : item);
                 });
             };
+
             const totalPedido = pedido.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0);
+
             return (
                  <div className="flex flex-col h-screen bg-gray-100">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
@@ -184,9 +179,14 @@
                                 <img src={item.producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={item.producto.nombre} className="w-12 h-12 rounded-md object-cover"/>
                                 <div className="flex-1"><p className="font-semibold text-gray-800 text-sm">{item.producto.nombre}</p><p className="text-xs text-gray-500">${item.producto.precio_unitario} c/u</p></div>
                                 <div className="flex items-center gap-3">
-                                    <button onClick={() => updateCantidad(item.producto.id, item.cantidad - 1)} className="w-7 h-7 bg-gray-200 rounded-full font-bold">-</button>
-                                    <span className="font-bold w-4 text-center">{item.cantidad}</span>
-                                    <button onClick={() => updateCantidad(item.producto.id, item.cantidad + 1)} className="w-7 h-7 bg-gray-200 rounded-full font-bold">+</button>
+                                    <label className="text-sm font-medium">Cant:</label>
+                                    <input 
+                                        type="number" 
+                                        value={item.cantidad} 
+                                        onChange={(e) => updateCantidad(item.producto.id, e.target.value)} 
+                                        className="w-16 text-center border-gray-300 border rounded-lg p-1"
+                                        min="0"
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -250,6 +250,44 @@
                 </div>
             );
         };
+        const QuantityModal = ({ product, existingQuantity, onSave, onCancel }) => {
+            const [quantity, setQuantity] = React.useState(existingQuantity || 1);
+
+            const handleSave = () => {
+                const numQuantity = parseInt(quantity, 10);
+                if (!isNaN(numQuantity) && numQuantity >= 0) {
+                    onSave(product, numQuantity);
+                }
+            };
+            
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+                        <div className="p-4 text-center">
+                            <img src={product.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={product.nombre} className="w-24 h-24 rounded-lg object-cover mx-auto mb-4"/>
+                            <h3 className="text-lg font-bold text-gray-800">{product.nombre}</h3>
+                            <p className="text-blue-600 font-bold mb-4">${product.precio_unitario}</p>
+                            <div className="flex items-center justify-center gap-4">
+                                <button onClick={() => setQuantity(q => Math.max(0, q - 1))} className="w-10 h-10 bg-gray-200 rounded-full font-bold text-xl">-</button>
+                                <input 
+                                    type="number"
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                    className="w-20 text-center text-2xl font-bold border-b-2 border-gray-300 focus:border-blue-500 focus:outline-none"
+                                />
+                                <button onClick={() => setQuantity(q => (parseInt(q,10) || 0) + 1)} className="w-10 h-10 bg-gray-200 rounded-full font-bold text-xl">+</button>
+                            </div>
+                        </div>
+                        <div className="p-4 flex gap-2 bg-gray-50 rounded-b-2xl">
+                            <button onClick={onCancel} className="w-full bg-gray-200 text-gray-800 font-bold py-3 rounded-lg">Cancelar</button>
+                            <button onClick={handleSave} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">
+                                {existingQuantity > 0 ? 'Actualizar' : 'Agregar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
         const ClienteFormView = ({ onBack, cliente, onSave }) => {
             const [formData, setFormData] = React.useState({ nombre_comercio: '', nombre_contacto: '', direccion: '', telefono: '' });
             const isEditing = cliente !== null;
@@ -292,13 +330,15 @@
           const [editingCliente, setEditingCliente] = React.useState(null);
           const [currentPedido, setCurrentPedido] = React.useState([]);
           const [editingPedido, setEditingPedido] = React.useState(null);
+          const [productForQuantity, setProductForQuantity] = React.useState(null);
+
           const handleLogin = React.useCallback(async (email, password) => {
             setLoading(true); setError(null);
             try {
               const loginResponse = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
               const data = await loginResponse.json();
               if (!loginResponse.ok) throw new Error(data.message || 'Error al iniciar sesión.');
-              if (data.user.rol !== 'vendedor') throw new Error('Acceso denegado. Solo para vendedores.');
+              if (data.user.rol !== 'vendedor' && data.user.rol !== 'admin') throw new Error('Acceso denegado.');
               const tempToken = data.token;
               const [clientesRes, productosRes] = await Promise.all([
                   fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${tempToken}` } }),
@@ -312,11 +352,14 @@
               setToken(tempToken); setUser(data.user);
             } catch (err) { setError(err.message); } finally { setLoading(false); }
           }, []);
+          
           const handleLogout = React.useCallback(() => {
-            localStorage.removeItem('vendedor_token'); localStorage.removeItem('vendedor_user');
+            localStorage.clear(); // Limpiamos todo al salir
             setToken(null); setUser(null); setCurrentPage('home'); setSelectedCliente(null); setCurrentPedido([]);
           }, []);
+          
           const handleSelectCliente = (cliente) => { setSelectedCliente(cliente); setCurrentPedido([]); setEditingPedido(null); setCurrentPage('pedido'); };
+          
           const handleSavePedido = (notas) => {
               let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
               if (editingPedido) {
@@ -330,6 +373,7 @@
               setCurrentPage('home');
               setEditingPedido(null);
           };
+
           const handleEditPedido = (pedido) => {
               const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]');
               const allProducts = JSON.parse(localStorage.getItem('productos') || '[]');
@@ -344,61 +388,135 @@
               setEditingPedido(pedido);
               setCurrentPage('summary');
           };
+
           const handleDeletePendingPedido = (pedidoId) => {
               let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
               pedidos = pedidos.filter(p => p.id_local !== pedidoId);
               localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
           };
-          const handleSaveCliente = (clienteData) => {
+
+          const handleSaveCliente = async (clienteData) => {
+              const token = localStorage.getItem('vendedor_token');
+              const isOnline = navigator.onLine;
+
+              if (isOnline && token && !clienteData.id?.toString().startsWith('local_')) {
+                  try {
+                      const url = clienteData.id ? `${API_URL}/clientes/${clienteData.id}` : `${API_URL}/clientes`;
+                      const method = clienteData.id ? 'PUT' : 'POST';
+                      const response = await fetch(url, {
+                          method: method,
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                          body: JSON.stringify(clienteData)
+                      });
+                      if (!response.ok) throw new Error('Falló la conexión con el servidor.');
+                      const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } });
+                      const clientesActualizados = await clientesRes.json();
+                      localStorage.setItem('clientes', JSON.stringify(clientesActualizados));
+                      alert('¡Cliente guardado en el servidor!');
+                      setCurrentPage('clientes'); setEditingCliente(null); return;
+                  } catch (e) { console.warn('Falló el guardado online, se guardará localmente.', e); }
+              }
+
               let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
               if (clienteData.id && !clienteData.id.toString().startsWith('local_')) { 
                   clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData, status: 'pending_update' } : c);
+              } else if (clienteData.id && clienteData.id.toString().startsWith('local_')) {
+                   clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData } : c);
               } else {
                   clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' });
               }
               localStorage.setItem('clientes', JSON.stringify(clientes));
-              alert('Cliente guardado localmente.');
-              setCurrentPage('clientes');
-              setEditingCliente(null);
+              alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.');
+              setCurrentPage('clientes'); setEditingCliente(null);
           };
+
           const handleSync = async () => {
               const syncToken = localStorage.getItem('vendedor_token');
               if (!syncToken) { alert('Error de autenticación. Por favor, inicie sesión de nuevo.'); return false; }
+              if (!navigator.onLine) { alert('No hay conexión a internet para sincronizar.'); return false; }
+
               try {
                   let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+                  const localIdToServerIdMap = {};
+
                   const clientesToCreate = clientes.filter(c => c.status === 'pending_create');
                   for (const cliente of clientesToCreate) {
-                      const { id, status, ...clientePayload } = cliente;
-                      await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) });
+                      const { id: localId, status, ...clientePayload } = cliente;
+                      const response = await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) });
+                      const newServerClient = await response.json();
+                      if (response.ok) { localIdToServerIdMap[localId] = newServerClient.id; }
                   }
+
                   const clientesToUpdate = clientes.filter(c => c.status === 'pending_update');
                   for (const cliente of clientesToUpdate) {
                       const { status, ...clientePayload } = cliente;
                       await fetch(`${API_URL}/clientes/${cliente.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) });
                   }
+
                   const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
-                  for (const pedido of pedidosPendientes) {
+                  for (let pedido of pedidosPendientes) {
+                      if (localIdToServerIdMap[pedido.cliente_id]) { pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; }
                       const { id_local, status, ...pedidoPayload } = pedido;
                       await fetch(`${API_URL}/pedidos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(pedidoPayload) });
                   }
+                  
                   localStorage.setItem('pedidos_pendientes', '[]');
                   const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } });
                   localStorage.setItem('clientes', JSON.stringify(await clientesRes.json()));
                   return true;
               } catch (error) { console.error('Error de red durante la sincronización:', error); return false; }
           };
-          const handleCancelEdit = () => {
-              setEditingPedido(null);
-              setCurrentPedido([]);
-              setCurrentPage('pendientes');
+
+          const handleCancelEdit = () => { setEditingPedido(null); setCurrentPedido([]); setCurrentPage('pendientes'); };
+
+          const handleProductSelect = (product, cart) => {
+              if (product.stock === 'No') {
+                  if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) {
+                      return;
+                  }
+              }
+              setProductForQuantity(product);
           };
+
+          const handleSaveQuantity = (product, quantity) => {
+              setCurrentPedido(currentPedido => {
+                  const existing = currentPedido.find(item => item.producto.id === product.id);
+                  if (existing) {
+                      if (quantity > 0) {
+                          return currentPedido.map(item => item.producto.id === product.id ? { ...item, cantidad: quantity } : item);
+                      } else {
+                          return currentPedido.filter(item => item.producto.id !== product.id);
+                      }
+                  } else if (quantity > 0) {
+                      return [...currentPedido, { producto, cantidad: quantity }];
+                  }
+                  return currentPedido;
+              });
+              setProductForQuantity(null); // Cierra la modal
+          };
+          
           if (!token || !user) { return <LoginPage onLogin={handleLogin} loading={loading} error={error} />; }
-          if (currentPage === 'clientes') { return <ClientesView onBack={() => setCurrentPage('home')} onSelectCliente={handleSelectCliente} onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} />; }
-          if (currentPage === 'cliente_form') { return <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />; }
-          if (currentPage === 'pedido' && selectedCliente) { return <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={(pedido) => { setCurrentPedido(pedido); setCurrentPage('summary'); }} cart={currentPedido} />; }
-          if (currentPage === 'summary' && selectedCliente) { return <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} />; }
-          if (currentPage === 'pendientes') { return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />; }
-          return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
+          
+          return (
+            <React.Fragment>
+              {currentPage === 'home' ? <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />
+              : currentPage === 'clientes' ? <ClientesView onBack={() => setCurrentPage('home')} onSelectCliente={handleSelectCliente} onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} />
+              : currentPage === 'cliente_form' ? <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />
+              : currentPage === 'pedido' && selectedCliente ? <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={(pedido) => { setCurrentPedido(pedido); setCurrentPage('summary'); }} cart={currentPedido} onProductSelect={handleProductSelect} />
+              : currentPage === 'summary' && selectedCliente ? <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} />
+              : currentPage === 'pendientes' ? <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />
+              : <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />
+              }
+              {productForQuantity && (
+                  <QuantityModal 
+                      product={productForQuantity}
+                      existingQuantity={currentPedido.find(item => item.producto.id === productForQuantity.id)?.cantidad || 0}
+                      onSave={handleSaveQuantity}
+                      onCancel={() => setProductForQuantity(null)}
+                  />
+              )}
+            </React.Fragment>
+          );
         }
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
