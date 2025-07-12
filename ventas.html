@@ -386,12 +386,17 @@
               const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]');
               const allProducts = JSON.parse(localStorage.getItem('productos') || '[]');
               const clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id);
-              if (!clienteDelPedido) { alert('No se pudo encontrar el cliente para este pedido.'); return; }
+              if (!clienteDelPedido) { 
+                  const localClient = allClientes.find(c => c.id === pedido.cliente_id);
+                  if(localClient) setSelectedCliente(localClient)
+                  else { alert('No se pudo encontrar el cliente para este pedido.'); return;}
+              } else {
+                setSelectedCliente(clienteDelPedido);
+              }
               const itemsConProducto = pedido.items.map(item => ({
                   producto: allProducts.find(p => p.id === item.producto_id),
                   cantidad: item.cantidad
               })).filter(item => item.producto);
-              setSelectedCliente(clienteDelPedido);
               setCurrentPedido(itemsConProducto);
               setEditingPedido(pedido);
               setCurrentPage('summary');
@@ -486,17 +491,17 @@
               setProductForQuantity(product);
           };
 
-          const handleSaveQuantity = (product, quantity) => {
+          const handleSaveQuantity = (productToSave, quantity) => {
               setCurrentPedido(currentPedido => {
-                  const existing = currentPedido.find(item => item.producto.id === product.id);
+                  const existing = currentPedido.find(item => item.producto.id === productToSave.id);
                   if (existing) {
                       if (quantity > 0) {
-                          return currentPedido.map(item => item.producto.id === product.id ? { ...item, cantidad: quantity } : item);
+                          return currentPedido.map(item => item.producto.id === productToSave.id ? { ...item, cantidad: quantity } : item);
                       } else {
-                          return currentPedido.filter(item => item.producto.id !== product.id);
+                          return currentPedido.filter(item => item.producto.id !== productToSave.id);
                       }
                   } else if (quantity > 0) {
-                      return [...currentPedido, { producto, cantidad: quantity }];
+                      return [...currentPedido, { producto: productToSave, cantidad: quantity }];
                   }
                   return currentPedido;
               });
@@ -505,22 +510,30 @@
           
           // --- Lógica de Renderizado ---
           const renderPage = () => {
-              if (currentPage === 'clientes') {
+              switch (currentPage) {
+                case 'clientes':
                   return <ClientesView onBack={() => setCurrentPage('home')} onSelectCliente={handleSelectCliente} onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} />;
-              }
-              if (currentPage === 'cliente_form') {
+                case 'cliente_form':
                   return <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />;
-              }
-              if (currentPage === 'pedido' && selectedCliente) {
-                  return <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} />;
-              }
-              if (currentPage === 'summary' && selectedCliente) {
-                  return <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} />;
-              }
-              if (currentPage === 'pendientes') {
+                case 'pedido':
+                  if (selectedCliente) {
+                    return <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} />;
+                  }
+                  // Fallback si no hay cliente seleccionado
+                  setCurrentPage('home');
+                  return null; 
+                case 'summary':
+                  if (selectedCliente) {
+                    return <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} />;
+                  }
+                  // Fallback si no hay cliente seleccionado
+                  setCurrentPage('home');
+                  return null;
+                case 'pendientes':
                   return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
+                default:
+                  return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
               }
-              return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
           };
           
           if (!token || !user) {
