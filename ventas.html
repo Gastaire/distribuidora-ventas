@@ -29,7 +29,7 @@
         const EditIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
         const TrashIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
         
-        // --- Componentes de Vistas (Sin cambios) ---
+        // --- Componentes de Vistas ---
         const LoginPage = ({ onLogin, loading, error }) => {
           const [email, setEmail] = React.useState('');
           const [password, setPassword] = React.useState('');
@@ -95,7 +95,7 @@
                         {loading && <p>Cargando clientes...</p>}
                         {!loading && filteredClientes.map(cliente => (
                             <div key={cliente.id} className="bg-white p-4 rounded-lg shadow mb-3 flex justify-between items-center">
-                                <div onClick={() => onSelectCliente(cliente)} className="flex-1">
+                                <div onClick={() => onSelectCliente(cliente)} className="flex-1 cursor-pointer">
                                     <p className="font-bold text-gray-800">{cliente.nombre_comercio}</p>
                                     <p className="text-sm text-gray-600">{cliente.direccion}</p>
                                 </div>
@@ -120,13 +120,13 @@
             return (
                 <div className="flex flex-col h-screen bg-gray-100">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
-                        <button onClick={() => onBack(cart)} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
+                        <button onClick={onBack} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
                         <div><h2 className="font-bold text-lg">{cliente.nombre_comercio}</h2><p className="text-xs text-gray-500">Nuevo Pedido</p></div>
                     </header>
                     <div className="p-4"><input type="text" placeholder="Buscar producto..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-4 py-2 mb-4 border rounded-lg"/></div>
                     <main className="flex-1 overflow-y-auto p-4 pt-0 pb-24">
                         {filteredProductos.map(producto => (
-                            <div key={producto.id} onClick={() => onProductSelect(producto, cart)} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4 active:bg-gray-200">
+                            <div key={producto.id} onClick={() => onProductSelect(producto)} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4 active:bg-gray-200 cursor-pointer">
                                 <img src={producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={producto.nombre} className="w-16 h-16 rounded-md object-cover"/>
                                 <div className="flex-1">
                                     <p className="font-semibold text-gray-800">{producto.nombre}</p>
@@ -143,9 +143,9 @@
                     </main>
                     {cart.length > 0 && (
                         <footer className="bg-white p-4 shadow-inner fixed bottom-0 w-full border-t">
-                            <button onClick={() => onShowCart(cart)} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-between items-center">
+                            <button onClick={onShowCart} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-between items-center">
                                 <div className="flex items-center gap-2"><ShoppingCartIcon className="h-6 w-6"/><span>{cart.reduce((acc, item) => acc + item.cantidad, 0)} items</span></div>
-                                <span>Ver Pedido</span><span>${cart.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0)}</span>
+                                <span>Ver Pedido</span><span>${cart.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0).toFixed(2)}</span>
                             </button>
                         </footer>
                     )}
@@ -170,11 +170,11 @@
             return (
                  <div className="flex flex-col h-screen bg-gray-100">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
-                        <button onClick={() => onBack(pedido)} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
+                        <button onClick={onBack} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
                         <div><h2 className="font-bold text-lg">{editingPedido ? 'Editar Pedido' : 'Revisar Pedido'}</h2><p className="text-xs text-gray-500">{cliente.nombre_comercio}</p></div>
                     </header>
                     <main className="flex-1 overflow-y-auto p-4">
-                        <button onClick={() => onAddMoreProducts(pedido)} className="w-full bg-blue-100 text-blue-800 font-semibold py-3 rounded-lg mb-4 flex items-center justify-center gap-2">
+                        <button onClick={onAddMoreProducts} className="w-full bg-blue-100 text-blue-800 font-semibold py-3 rounded-lg mb-4 flex items-center justify-center gap-2">
                            <PlusIcon className="h-5 w-5"/> Agregar más productos
                         </button>
                         {pedido.length === 0 && <p className="text-center text-gray-500 mt-8">El carrito está vacío.</p>}
@@ -197,7 +197,7 @@
                         <div className="mt-4"><label htmlFor="notas" className="block text-sm font-medium text-gray-700 mb-1">Notas para la entrega</label><textarea id="notas" value={notas} onChange={e => setNotas(e.target.value)} rows="3" className="w-full p-2 border rounded-lg" placeholder="Ej: Dejar en el depósito del fondo..."></textarea></div>
                     </main>
                     <footer className="bg-white p-4 shadow-inner sticky bottom-0 border-t">
-                        <div className="flex justify-between items-center font-bold text-xl mb-3"><span>Total:</span><span>${totalPedido}</span></div>
+                        <div className="flex justify-between items-center font-bold text-xl mb-3"><span>Total:</span><span>${totalPedido.toFixed(2)}</span></div>
                         <div className="flex gap-2">
                             {editingPedido && (
                                 <button onClick={onCancelEdit} className="w-full bg-gray-500 text-white font-bold py-3 rounded-lg">Descartar Cambios</button>
@@ -240,7 +240,7 @@
                         {pedidos.map(p => (
                             <div key={p.id_local} className="bg-white p-4 rounded-lg shadow mb-3 flex justify-between items-center">
                                 <div>
-                                    <p className="font-bold text-gray-800">Pedido para Cliente ID: {p.cliente_id}</p>
+                                    <p className="font-bold text-gray-800">Pedido para: {JSON.parse(localStorage.getItem('clientes') || '[]').find(c => c.id === p.cliente_id)?.nombre_comercio || 'Cliente no encontrado'}</p>
                                     <p className="text-sm text-gray-600">{p.items.length} items</p>
                                     <p className="text-xs text-gray-400">Creado: {new Date(p.fecha).toLocaleString()}</p>
                                 </div>
@@ -327,7 +327,7 @@
 
         // --- Componente Principal de la Aplicación ---
         function App() {
-          // --- Estados (Sin cambios) ---
+          // --- Estados ---
           const [token, setToken] = React.useState(localStorage.getItem('vendedor_token'));
           const [user, setUser] = React.useState(JSON.parse(localStorage.getItem('vendedor_user')));
           const [loading, setLoading] = React.useState(false);
@@ -339,7 +339,7 @@
           const [editingPedido, setEditingPedido] = React.useState(null);
           const [productForQuantity, setProductForQuantity] = React.useState(null);
 
-          // --- Handlers (Sin cambios) ---
+          // --- Handlers ---
           const handleLogin = React.useCallback(async (email, password) => {
             setLoading(true); setError(null);
             try {
@@ -477,7 +477,7 @@
 
           const handleCancelEdit = () => { setEditingPedido(null); setCurrentPedido([]); setCurrentPage('pendientes'); };
 
-          const handleProductSelect = (product, cart) => {
+          const handleProductSelect = (product) => {
               if (product.stock === 'No') {
                   if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) {
                       return;
@@ -503,21 +503,50 @@
               setProductForQuantity(null);
           };
 
-          // ✨ CORRECCIÓN: Lógica de renderizado reestructurada
+          // --- Lógica de Renderizado ---
           let pageComponent;
 
           if (!token || !user) {
               pageComponent = <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
           } else if (currentPage === 'clientes') {
-              pageComponent = <ClientesView onBack={() => setCurrentPage('home')} onSelectCliente={handleSelectCliente} onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} />;
+              pageComponent = <ClientesView 
+                onBack={() => setCurrentPage('home')} 
+                onSelectCliente={handleSelectCliente} 
+                onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} 
+                onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} 
+              />;
           } else if (currentPage === 'cliente_form') {
-              pageComponent = <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />;
+              pageComponent = <ClienteFormView 
+                onBack={() => setCurrentPage('clientes')} 
+                cliente={editingCliente} 
+                onSave={handleSaveCliente} 
+              />;
           } else if (currentPage === 'pedido' && selectedCliente) {
-              pageComponent = <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={(pedido) => { setCurrentPedido(pedido); setCurrentPage('summary'); }} cart={currentPedido} onProductSelect={handleProductSelect} />;
+              pageComponent = <PedidoView 
+                cliente={selectedCliente} 
+                onBack={() => { setCurrentPage('clientes'); setCurrentPedido([]); }} 
+                onShowCart={() => setCurrentPage('summary')} 
+                cart={currentPedido} 
+                onProductSelect={handleProductSelect} 
+              />;
           } else if (currentPage === 'summary' && selectedCliente) {
-              pageComponent = <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={(cart) => { setCurrentPedido(cart); setCurrentPage('pedido'); }} />;
+              pageComponent = <PedidoSummaryView 
+                cliente={selectedCliente} 
+                pedido={currentPedido} 
+                setPedido={setCurrentPedido} 
+                onBack={() => setCurrentPage('pedido')} 
+                onSave={handleSavePedido} 
+                editingPedido={editingPedido} 
+                onCancelEdit={handleCancelEdit} 
+                onAddMoreProducts={() => setCurrentPage('pedido')} 
+              />;
           } else if (currentPage === 'pendientes') {
-              pageComponent = <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
+              pageComponent = <PedidosPendientesView 
+                onBack={() => setCurrentPage('home')} 
+                onSync={handleSync} 
+                onEditPedido={handleEditPedido} 
+                onDeletePedido={handleDeletePendingPedido} 
+              />;
           } else {
               pageComponent = <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
           }
