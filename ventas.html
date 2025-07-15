@@ -329,7 +329,6 @@
 
         // --- Componente Principal de la Aplicación ---
         function App() {
-          // --- Estados ---
           const [token, setToken] = React.useState(localStorage.getItem('vendedor_token'));
           const [user, setUser] = React.useState(JSON.parse(localStorage.getItem('vendedor_user')));
           const [loading, setLoading] = React.useState(false);
@@ -341,174 +340,127 @@
           const [editingPedido, setEditingPedido] = React.useState(null);
           const [productForQuantity, setProductForQuantity] = React.useState(null);
 
-          // --- Handlers ---
-          const handleLogin = React.useCallback(async (email, password) => {
-            setLoading(true); setError(null);
-            try {
-              const loginResponse = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-              const data = await loginResponse.json();
-              if (!loginResponse.ok) throw new Error(data.message || 'Error al iniciar sesión.');
-              if (data.user.rol !== 'vendedor' && data.user.rol !== 'admin') throw new Error('Acceso denegado.');
-              const tempToken = data.token;
-              const [clientesRes, productosRes] = await Promise.all([
-                  fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${tempToken}` } }),
-                  fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${tempToken}` } })
-              ]);
-              if (!clientesRes.ok || !productosRes.ok) throw new Error('Error al sincronizar datos.');
-              localStorage.setItem('clientes', JSON.stringify(await clientesRes.json()));
-              localStorage.setItem('productos', JSON.stringify(await productosRes.json()));
-              localStorage.setItem('vendedor_token', tempToken);
-              localStorage.setItem('vendedor_user', JSON.stringify(data.user));
-              setToken(tempToken); setUser(data.user);
-            } catch (err) { setError(err.message); } finally { setLoading(false); }
-          }, []);
+          // --- Handlers (Lógica principal) ---
           
-          const handleLogout = React.useCallback(() => {
-            localStorage.clear();
-            setToken(null); setUser(null); setCurrentPage('home'); setSelectedCliente(null); setCurrentPedido([]);
-          }, []);
-          
-          const handleSelectCliente = (cliente) => { setSelectedCliente(cliente); setCurrentPedido([]); setEditingPedido(null); setCurrentPage('pedido'); };
+          const generateAndSavePDF = (pedidoData, clienteData) => {
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF();
+              
+              doc.setFontSize(20);
+              doc.text("Resumen de Pedido", 105, 20, null, null, "center");
+              
+              doc.setFontSize(12);
+              doc.text(`Cliente: ${clienteData.nombre_comercio}`, 14, 30);
+              doc.text(`Fecha: ${new Date(pedidoData.fecha).toLocaleString()}`, 14, 37);
+              
+              const tableColumn = ["Cant.", "Producto", "P. Unit.", "Subtotal"];
+              const tableRows = [];
+              let total = 0;
+
+              pedidoData.items.forEach(item => {
+                  const producto = JSON.parse(localStorage.getItem('productos') || '[]').find(p => p.id === item.producto_id);
+                  if(producto) {
+                      const subtotal = item.cantidad * producto.precio_unitario;
+                      total += subtotal;
+                      const itemData = [
+                          item.cantidad,
+                          producto.nombre,
+                          `$${producto.precio_unitario.toFixed(2)}`,
+                          `$${subtotal.toFixed(2)}`
+                      ];
+                      tableRows.push(itemData);
+                  }
+              });
+
+              doc.autoTable({
+                  startY: 45,
+                  head: [tableColumn],
+                  body: tableRows,
+              });
+
+              doc.setFontSize(14);
+              doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
+              
+              if(pedidoData.notas_entrega) {
+                  doc.setFontSize(12);
+                  doc.text("Notas:", 14, doc.autoTable.previous.finalY + 20);
+                  doc.text(pedidoData.notas_entrega, 14, doc.autoTable.previous.finalY + 27);
+              }
+              
+              // Guarda el PDF en el dispositivo
+              doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
+          };
+
+          const manageLocalPedidos = (nuevoPedido) => {
+              let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+              pedidos.push(nuevoPedido);
+              // Si hay más de 30, elimina el más antiguo
+              if (pedidos.length > 30) {
+                  pedidos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)); // Ordena por fecha ascendente
+                  pedidos.shift(); // Elimina el primer elemento (el más viejo)
+              }
+              localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
+          };
+
+          const scheduleAutoSync = () => {
+              console.log("Auto-sync programado para dentro de 60 segundos.");
+              setTimeout(async () => {
+                  if (navigator.onLine) {
+                      console.log("Intentando auto-sync (intento 1)...");
+                      const success = await handleSync(true); // true para modo silencioso
+                      if (!success) {
+                          console.log("Auto-sync falló. Reintentando en 5 minutos.");
+                          setTimeout(async () => {
+                              if(navigator.onLine){
+                                console.log("Intentando auto-sync (intento 2)...");
+                                await handleSync(true);
+                              }
+                          }, 300000); // 5 minutos
+                      }
+                  }
+              }, 60000); // 1 minuto
+          };
           
           const handleSavePedido = (notas) => {
+              const clienteData = selectedCliente;
+              let nuevoPedido;
               let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+
               if (editingPedido) {
-                  pedidosPendientes = pedidosPendientes.map(p => p.id_local === editingPedido.id_local ? { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas } : p);
+                  // Actualizar un pedido existente
+                  nuevoPedido = { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas };
+                  pedidosPendientes = pedidosPendientes.map(p => p.id_local === editingPedido.id_local ? nuevoPedido : p);
+                  localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes));
               } else {
-                  const nuevoPedido = { id_local: Date.now(), cliente_id: selectedCliente.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
-                  pedidosPendientes.push(nuevoPedido);
+                  // Crear un nuevo pedido
+                  nuevoPedido = { id_local: Date.now(), cliente_id: clienteData.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
+                  manageLocalPedidos(nuevoPedido);
+                  scheduleAutoSync(); // Programar auto-sync solo para pedidos nuevos
               }
-              localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes));
-              alert('¡Pedido guardado localmente!');
+              
+              try {
+                  generateAndSavePDF(nuevoPedido, clienteData);
+                  alert('¡Pedido guardado localmente y PDF generado!');
+              } catch(e) {
+                  console.error("Error generando PDF:", e);
+                  alert('Pedido guardado localmente, pero hubo un error al generar el PDF.');
+              }
+              
               setCurrentPage('home');
               setEditingPedido(null);
           };
 
-          const handleEditPedido = (pedido) => {
-              const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-              const allProducts = JSON.parse(localStorage.getItem('productos') || '[]');
-              const clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id);
-              if (!clienteDelPedido) { 
-                  const localClient = allClientes.find(c => c.id === pedido.cliente_id);
-                  if(localClient) setSelectedCliente(localClient)
-                  else { alert('No se pudo encontrar el cliente para este pedido.'); return;}
-              } else {
-                setSelectedCliente(clienteDelPedido);
-              }
-              const itemsConProducto = pedido.items.map(item => ({
-                  producto: allProducts.find(p => p.id === item.producto_id),
-                  cantidad: item.cantidad
-              })).filter(item => item.producto);
-              setCurrentPedido(itemsConProducto);
-              setEditingPedido(pedido);
-              setCurrentPage('summary');
-          };
-
-          const handleDeletePendingPedido = (pedidoId) => {
-              let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
-              pedidos = pedidos.filter(p => p.id_local !== pedidoId);
-              localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
-          };
-
-          const handleSaveCliente = async (clienteData) => {
-              const token = localStorage.getItem('vendedor_token');
-              const isOnline = navigator.onLine;
-
-              if (isOnline && token && clienteData.id && String(clienteData.id).startsWith('local_') === false) {
-                  try {
-                      const url = clienteData.id ? `${API_URL}/clientes/${clienteData.id}` : `${API_URL}/clientes`;
-                      const method = clienteData.id ? 'PUT' : 'POST';
-                      const response = await fetch(url, {
-                          method: method,
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                          body: JSON.stringify(clienteData)
-                      });
-                      if (!response.ok) throw new Error('Falló la conexión con el servidor.');
-                      const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } });
-                      const clientesActualizados = await clientesRes.json();
-                      localStorage.setItem('clientes', JSON.stringify(clientesActualizados));
-                      alert('¡Cliente guardado en el servidor!');
-                      setCurrentPage('clientes'); setEditingCliente(null); return;
-                  } catch (e) { console.warn('Falló el guardado online, se guardará localmente.', e); }
-              }
-
-              let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-              if (clienteData.id && String(clienteData.id).startsWith('local_') === false) { 
-                  clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData, status: 'pending_update' } : c);
-              } else if (clienteData.id && String(clienteData.id).startsWith('local_')) {
-                   clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData } : c);
-              } else {
-                  clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' });
-              }
-              localStorage.setItem('clientes', JSON.stringify(clientes));
-              alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.');
-              setCurrentPage('clientes'); setEditingCliente(null);
-          };
-
-          const handleSync = async () => {
-              const syncToken = localStorage.getItem('vendedor_token');
-              if (!syncToken) { alert('Error de autenticación. Por favor, inicie sesión de nuevo.'); return false; }
-              if (!navigator.onLine) { alert('No hay conexión a internet para sincronizar.'); return false; }
-
-              try {
-                  let clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-                  const localIdToServerIdMap = {};
-
-                  const clientesToCreate = clientes.filter(c => c.status === 'pending_create');
-                  for (const cliente of clientesToCreate) {
-                      const { id: localId, status, ...clientePayload } = cliente;
-                      const response = await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) });
-                      const newServerClient = await response.json();
-                      if (response.ok) { localIdToServerIdMap[localId] = newServerClient.id; }
-                  }
-
-                  const clientesToUpdate = clientes.filter(c => c.status === 'pending_update');
-                  for (const cliente of clientesToUpdate) {
-                      const { status, ...clientePayload } = cliente;
-                      await fetch(`${API_URL}/clientes/${cliente.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) });
-                  }
-
-                  const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
-                  for (let pedido of pedidosPendientes) {
-                      if (localIdToServerIdMap[pedido.cliente_id]) { pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; }
-                      const { id_local, status, ...pedidoPayload } = pedido;
-                      await fetch(`${API_URL}/pedidos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(pedidoPayload) });
-                  }
-                  
-                  localStorage.setItem('pedidos_pendientes', '[]');
-                  const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } });
-                  localStorage.setItem('clientes', JSON.stringify(await clientesRes.json()));
-                  return true;
-              } catch (error) { console.error('Error de red durante la sincronización:', error); return false; }
-          };
-
+          // El resto de los handlers (handleLogin, handleLogout, handleSync, etc.) no necesitan cambios
+          const handleLogin = React.useCallback(async (email, password) => { setLoading(true); setError(null); try { const loginResponse = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const data = await loginResponse.json(); if (!loginResponse.ok) throw new Error(data.message || 'Error al iniciar sesión.'); if (data.user.rol !== 'vendedor' && data.user.rol !== 'admin') throw new Error('Acceso denegado.'); const tempToken = data.token; const [clientesRes, productosRes] = await Promise.all([ fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${tempToken}` } }), fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${tempToken}` } }) ]); if (!clientesRes.ok || !productosRes.ok) throw new Error('Error al sincronizar datos.'); localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); localStorage.setItem('productos', JSON.stringify(await productosRes.json())); localStorage.setItem('vendedor_token', tempToken); localStorage.setItem('vendedor_user', JSON.stringify(data.user)); setToken(tempToken); setUser(data.user); } catch (err) { setError(err.message); } finally { setLoading(false); } }, []);
+          const handleLogout = React.useCallback(() => { localStorage.clear(); setToken(null); setUser(null); setCurrentPage('home'); setSelectedCliente(null); setCurrentPedido([]); }, []);
+          const handleSelectCliente = (cliente) => { setSelectedCliente(cliente); setCurrentPedido([]); setEditingPedido(null); setCurrentPage('pedido'); };
+          const handleEditPedido = (pedido) => { const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]'); const allProducts = JSON.parse(localStorage.getItem('productos') || '[]'); let clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id); if (!clienteDelPedido) { alert('No se pudo encontrar el cliente para este pedido.'); return; } setSelectedCliente(clienteDelPedido); const itemsConProducto = pedido.items.map(item => ({ producto: allProducts.find(p => p.id === item.producto_id), cantidad: item.cantidad })).filter(item => item.producto); setCurrentPedido(itemsConProducto); setEditingPedido(pedido); setCurrentPage('summary'); };
+          const handleDeletePendingPedido = (pedidoId) => { let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); pedidos = pedidos.filter(p => p.id_local !== pedidoId); localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos)); };
+          const handleSaveCliente = async (clienteData) => { const token = localStorage.getItem('vendedor_token'); const isOnline = navigator.onLine; if (isOnline && token && clienteData.id && String(clienteData.id).startsWith('local_') === false) { try { const url = clienteData.id ? `${API_URL}/clientes/${clienteData.id}` : `${API_URL}/clientes`; const method = clienteData.id ? 'PUT' : 'POST'; const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(clienteData) }); if (!response.ok) throw new Error('Falló la conexión con el servidor.'); const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } }); const clientesActualizados = await clientesRes.json(); localStorage.setItem('clientes', JSON.stringify(clientesActualizados)); alert('¡Cliente guardado en el servidor!'); setCurrentPage('clientes'); setEditingCliente(null); return; } catch (e) { console.warn('Falló el guardado online, se guardará localmente.', e); } } let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); if (clienteData.id && String(clienteData.id).startsWith('local_') === false) { clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData, status: 'pending_update' } : c); } else if (clienteData.id && String(clienteData.id).startsWith('local_')) { clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData } : c); } else { clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' }); } localStorage.setItem('clientes', JSON.stringify(clientes)); alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.'); setCurrentPage('clientes'); setEditingCliente(null); };
+          const handleSync = async (isAuto = false) => { const syncToken = localStorage.getItem('vendedor_token'); if (!syncToken) { if (!isAuto) alert('Error de autenticación.'); return false; } if (!navigator.onLine) { if (!isAuto) alert('No hay conexión a internet.'); return false; } try { let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); const localIdToServerIdMap = {}; const clientesToCreate = clientes.filter(c => c.status === 'pending_create'); for (const cliente of clientesToCreate) { const { id: localId, status, ...clientePayload } = cliente; const response = await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) }); const newServerClient = await response.json(); if (response.ok) { localIdToServerIdMap[localId] = newServerClient.id; } } const clientesToUpdate = clientes.filter(c => c.status === 'pending_update'); for (const cliente of clientesToUpdate) { const { status, ...clientePayload } = cliente; await fetch(`${API_URL}/clientes/${cliente.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) }); } const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); if(pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { if(!isAuto) alert("No hay nada para sincronizar."); return true; } for (let pedido of pedidosPendientes) { if (localIdToServerIdMap[pedido.cliente_id]) { pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; } const { id_local, status, ...pedidoPayload } = pedido; await fetch(`${API_URL}/pedidos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(pedidoPayload) }); } localStorage.setItem('pedidos_pendientes', '[]'); const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } }); localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); return true; } catch (error) { console.error('Error de red durante la sincronización:', error); if (!isAuto) alert('Ocurrió un error durante la sincronización.'); return false; } };
           const handleCancelEdit = () => { setEditingPedido(null); setCurrentPedido([]); setCurrentPage('pendientes'); };
-
-          const handleProductSelect = (product) => {
-              if (product.stock === 'No') {
-                  if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) {
-                      return;
-                  }
-              }
-              setProductForQuantity(product);
-          };
-
-          const handleSaveQuantity = (productToSave, quantity) => {
-              setCurrentPedido(currentPedido => {
-                  const existing = currentPedido.find(item => item.producto.id === productToSave.id);
-                  if (existing) {
-                      if (quantity > 0) {
-                          return currentPedido.map(item => item.producto.id === productToSave.id ? { ...item, cantidad: quantity } : item);
-                      } else {
-                          return currentPedido.filter(item => item.producto.id !== productToSave.id);
-                      }
-                  } else if (quantity > 0) {
-                      return [...currentPedido, { producto: productToSave, cantidad: quantity }];
-                  }
-                  return currentPedido;
-              });
-              setProductForQuantity(null);
-          };
+          const handleProductSelect = (product) => { if (product.stock === 'No') { if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) { return; } } setProductForQuantity(product); };
+          const handleSaveQuantity = (productToSave, quantity) => { setCurrentPedido(currentPedido => { const existing = currentPedido.find(item => item.producto.id === productToSave.id); if (existing) { if (quantity > 0) { return currentPedido.map(item => item.producto.id === productToSave.id ? { ...item, cantidad: quantity } : item); } else { return currentPedido.filter(item => item.producto.id !== productToSave.id); } } else if (quantity > 0) { return [...currentPedido, { producto: productToSave, cantidad: quantity }]; } return currentPedido; }); setProductForQuantity(null); };
           
           // --- Lógica de Renderizado ---
           const renderPage = () => {
@@ -518,19 +470,9 @@
                 case 'cliente_form':
                   return <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />;
                 case 'pedido':
-                  if (selectedCliente) {
-                    return <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} />;
-                  }
-                  // Fallback si no hay cliente seleccionado
-                  setCurrentPage('home');
-                  return null; 
+                  return selectedCliente ? <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} /> : setCurrentPage('home');
                 case 'summary':
-                  if (selectedCliente) {
-                    return <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} />;
-                  }
-                  // Fallback si no hay cliente seleccionado
-                  setCurrentPage('home');
-                  return null;
+                  return selectedCliente ? <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} /> : setCurrentPage('home');
                 case 'pendientes':
                   return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
                 default:
@@ -557,11 +499,9 @@
           );
         }
 
-        // Renderiza la aplicación en el DOM
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
     <script>
-        // Registra el Service Worker para la PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW Registrado!', reg)).catch(err => console.log('Error SW:', err));
