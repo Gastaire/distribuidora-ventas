@@ -372,22 +372,27 @@
                   }
               });
 
-              doc.autoTable({
-                  startY: 45,
-                  head: [tableColumn],
-                  body: tableRows,
-              });
+              let finalY = 45; // Posición inicial por defecto
+
+              // CORRECCIÓN: Solo dibuja la tabla si hay items
+              if (tableRows.length > 0) {
+                doc.autoTable({
+                    startY: finalY,
+                    head: [tableColumn],
+                    body: tableRows,
+                });
+                finalY = doc.autoTable.previous.finalY; // Actualiza la posición si la tabla se dibujó
+              }
 
               doc.setFontSize(14);
-              doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
+              doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, finalY + 10);
               
               if(pedidoData.notas_entrega) {
                   doc.setFontSize(12);
-                  doc.text("Notas:", 14, doc.autoTable.previous.finalY + 20);
-                  doc.text(pedidoData.notas_entrega, 14, doc.autoTable.previous.finalY + 27);
+                  doc.text("Notas:", 14, finalY + 20);
+                  doc.text(pedidoData.notas_entrega, 14, finalY + 27);
               }
               
-              // Guarda el PDF en el dispositivo
               doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
           };
 
