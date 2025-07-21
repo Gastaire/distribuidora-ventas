@@ -18,11 +18,15 @@
             .no-print { display: none; }
             #pdf-view { display: block !important; }
         }
+        .toast-enter { opacity: 0; transform: translateY(20px); }
+        .toast-enter-active { opacity: 1; transform: translateY(0); transition: opacity 300ms, transform 300ms; }
+        .toast-exit { opacity: 1; transform: translateY(0); }
+        .toast-exit-active { opacity: 0; transform: translateY(20px); transition: opacity 300ms, transform 300ms; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="root"></div>
-    <div id="pdf-view" class="hidden"></div>
+    <div id="pdf-view" className="hidden"></div>
 
     <script type="text/babel">
         const API_URL = 'https://distriapi.onzacore.site/api';
@@ -39,6 +43,7 @@
         const EditIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
         const TrashIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
         const HistoryIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>);
+        const EyeIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
 
         // --- Componente StatusBadge ---
         const StatusBadge = ({ status }) => {
@@ -49,6 +54,26 @@
             };
             const s = styles[status] || { text: 'Desconocido', bg: 'bg-gray-100', text_color: 'text-gray-800' };
             return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.bg} ${s.text_color}`}>{s.text}</span>;
+        };
+
+        // --- Componente Toast para Notificaciones ---
+        const Toast = ({ message, type, onClose }) => {
+            React.useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            const bgColor = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            }[type] || 'bg-gray-500';
+
+            return (
+                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg max-w-md w-full toast-enter toast-enter-active`}>
+                    {message}
+                </div>
+            );
         };
 
         // --- Componentes de Vistas ---
@@ -73,10 +98,23 @@
 
         const VendedorHomePage = ({ user, onLogout, setCurrentPage }) => {
             const [pendingCount, setPendingCount] = React.useState(0);
+            const [badgeColor, setBadgeColor] = React.useState('bg-red-500');
             React.useEffect(() => {
                 const interval = setInterval(() => {
                     const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                    const pendingSyncCount = pedidosPendientes.filter(p => p.status === 'pending_sync').length;
+                    const syncFailedCount = pedidosPendientes.filter(p => p.status === 'sync_failed').length;
+                    const syncedCount = pedidosPendientes.filter(p => p.status === 'synced').length;
                     setPendingCount(pedidosPendientes.length);
+                    if (pendingSyncCount > 0) {
+                        setBadgeColor('bg-red-500');
+                    } else if (syncFailedCount > 0) {
+                        setBadgeColor('bg-yellow-500');
+                    } else if (syncedCount > 0) {
+                        setBadgeColor('bg-green-500');
+                    } else {
+                        setBadgeColor('bg-red-500');
+                    }
                 }, 1000);
                 return () => clearInterval(interval);
             }, []);
@@ -85,15 +123,15 @@
                     <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10"><div className="flex justify-between items-center"><h1 className="text-xl font-bold">Hola, {user.nombre}</h1><button onClick={onLogout}><LogOutIcon className="h-6 w-6"/></button></div></header>
                     <main className="p-4 grid grid-cols-2 gap-4">
                         <ActionButton icon={<UsersIcon/>} text="Clientes" onClick={() => setCurrentPage('clientes')} />
-                        <ActionButton icon={<ShoppingCartIcon/>} text="Pedidos Pendientes" onClick={() => setCurrentPage('pendientes')} badge={pendingCount} />
+                        <ActionButton icon={<ShoppingCartIcon/>} text="Pedidos Pendientes" onClick={() => setCurrentPage('pendientes')} badge={pendingCount} badgeColor={badgeColor} />
                     </main>
                 </div>
             );
         };
 
-        const ActionButton = ({ icon, text, onClick, badge }) => (
+        const ActionButton = ({ icon, text, onClick, badge, badgeColor }) => (
             <button onClick={onClick} className="bg-white p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 active:scale-95 transition-transform relative">
-                {badge > 0 && <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">{badge}</span>}
+                {badge > 0 && <span className={`absolute top-2 right-2 ${badgeColor} text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center`}>{badge}</span>}
                 <div className="text-blue-600 mb-2">{React.cloneElement(icon, { className: "h-10 w-10" })}</div>
                 <span className="font-semibold text-gray-700">{text}</span>
             </button>
@@ -197,6 +235,61 @@
             );
         };
 
+        const PedidoDetailView = ({ pedido, cliente, onBack }) => {
+            const [productos, setProductos] = React.useState([]);
+            React.useEffect(() => {
+                const productosGuardados = JSON.parse(localStorage.getItem('productos') || '[]');
+                setProductos(productosGuardados);
+            }, []);
+
+            const calcularTotal = (items) => {
+                return items.reduce((total, item) => {
+                    const producto = productos.find(p => p.id === item.producto_id);
+                    return total + (producto ? producto.precio_unitario * item.cantidad : 0);
+                }, 0).toFixed(2);
+            };
+
+            return (
+                <div className="bg-gray-100 min-h-screen">
+                    <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
+                        <button onClick={onBack} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
+                        <div>
+                            <h2 className="font-bold text-lg">Detalles del Pedido</h2>
+                            <p className="text-xs text-gray-500">N° {pedido.id_local} - {cliente.nombre_comercio}</p>
+                        </div>
+                    </header>
+                    <main className="p-4">
+                        <div className="bg-white p-4 rounded-lg shadow mb-3">
+                            <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                <div>
+                                    <p className="font-bold text-gray-800">Fecha: {new Date(pedido.fecha).toLocaleDateString()}</p>
+                                    <StatusBadge status={pedido.status} />
+                                </div>
+                                <p className="font-semibold text-blue-600">Total: ${calcularTotal(pedido.items)}</p>
+                            </div>
+                            <ul className="text-sm text-gray-700 space-y-1">
+                                {pedido.items.map(item => {
+                                    const producto = productos.find(p => p.id === item.producto_id);
+                                    return (
+                                        <li key={item.producto_id} className="flex justify-between">
+                                            <span>{item.cantidad} x {producto ? producto.nombre : 'Producto no encontrado'}</span>
+                                            <span>${producto ? (item.cantidad * producto.precio_unitario).toFixed(2) : '0.00'}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                            {pedido.notas_entrega && (
+                                <div className="mt-4">
+                                    <h3 className="font-bold text-sm">Notas:</h3>
+                                    <p className="text-sm text-gray-600 mt-1">{pedido.notas_entrega}</p>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
         const PedidoView = ({ cliente, onBack, onShowCart, cart, onProductSelect }) => {
             const [productos, setProductos] = React.useState([]);
             const [searchTerm, setSearchTerm] = React.useState('');
@@ -217,7 +310,7 @@
                     <main className="flex-1 overflow-y-auto p-4 pt-0 pb-24">
                         {filteredProductos.map(producto => (
                             <div key={producto.id} onClick={() => onProductSelect(producto)} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4 active:bg-gray-200 cursor-pointer">
-                                <img src={producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={producto.nombre} className="w-16 h-16 rounded-md object-cover"/>
+                                <img loading="lazy" src={producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={producto.nombre} className="w-16 h-16 rounded-md object-cover"/>
                                 <div className="flex-1">
                                     <p className="font-semibold text-gray-800">{producto.nombre}</p>
                                     <p className="text-sm text-blue-600 font-bold">${producto.precio_unitario}</p>
@@ -271,7 +364,7 @@
                         {pedido.length === 0 && <p className="text-center text-gray-500 mt-8">El carrito está vacío.</p>}
                         {pedido.map(item => (
                             <div key={item.producto.id} className="bg-white p-3 rounded-lg shadow mb-3 flex items-center gap-4">
-                                <img src={item.producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={item.producto.nombre} className="w-12 h-12 rounded-md object-cover"/>
+                                <img loading="lazy" src={item.producto.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={item.producto.nombre} className="w-12 h-12 rounded-md object-cover"/>
                                 <div className="flex-1"><p className="font-semibold text-gray-800 text-sm">{item.producto.nombre}</p><p className="text-xs text-gray-500">${item.producto.precio_unitario} c/u</p></div>
                                 <div className="flex items-center gap-3">
                                     <label className="text-sm font-medium">Cant:</label>
@@ -300,20 +393,19 @@
             );
         };
 
-        const PedidosPendientesView = ({ onBack, onSync, onEditPedido, onDeletePedido }) => {
+        const PedidosPendientesView = ({ onBack, onSync, onEditPedido, onViewPedido, onDeletePedido }) => {
             const [pedidos, setPedidos] = React.useState([]);
             const [syncing, setSyncing] = React.useState(false);
-            const [syncStatus, setSyncStatus] = React.useState('');
+            const [toast, setToast] = React.useState(null);
             React.useEffect(() => { 
                 const storedPedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
                 setPedidos(storedPedidos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 30)); 
             }, []);
             const handleSync = async () => {
-                setSyncing(true); setSyncStatus('Sincronizando...');
+                setSyncing(true);
                 const success = await onSync();
-                if(success) { setSyncStatus('¡Sincronización completa!'); } 
-                else { setSyncStatus('Error al sincronizar. Revisa tu conexión.'); }
-                setSyncing(false); setTimeout(() => setSyncStatus(''), 3000);
+                setToast({ message: success ? '¡Sincronización completa!' : 'Error al sincronizar. Revisa tu conexión.', type: success ? 'success' : 'error' });
+                setSyncing(false);
                 setPedidos(JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]').sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 30));
             };
             const handleDelete = (pedidoId) => {
@@ -331,7 +423,6 @@
                         </button>
                     </header>
                     <main className="p-4">
-                        {syncStatus && <p className="text-center p-2 mb-4 bg-yellow-200 rounded-lg">{syncStatus}</p>}
                         {pedidos.length === 0 && !syncing && <p className="text-center text-gray-500 mt-8">No hay pedidos pendientes por sincronizar.</p>}
                         {pedidos.map(p => (
                             <div key={p.id_local} className="bg-white p-4 rounded-lg shadow mb-3 flex justify-between items-center">
@@ -342,12 +433,18 @@
                                     <StatusBadge status={p.status} />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => onEditPedido(p)} disabled={p.status === 'synced'} className="text-gray-400 hover:text-blue-600 p-2 disabled:opacity-50"><EditIcon className="h-5 w-5"/></button>
-                                    <button onClick={() => handleDelete(p.id_local)} className="text-gray-400 hover:text-red-600 p-2"><TrashIcon className="h-5 w-5"/></button>
+                                    <button onClick={() => onViewPedido(p)} className="text-gray-400 hover:text-blue-600 p-2"><EyeIcon className="h-5 w-5"/></button>
+                                    {p.status !== 'synced' && (
+                                        <>
+                                            <button onClick={() => onEditPedido(p)} className="text-gray-400 hover:text-blue-600 p-2"><EditIcon className="h-5 w-5"/></button>
+                                            <button onClick={() => handleDelete(p.id_local)} className="text-gray-400 hover:text-red-600 p-2"><TrashIcon className="h-5 w-5"/></button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}
                     </main>
+                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                 </div>
             );
         };
@@ -366,7 +463,7 @@
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
                         <div className="p-4 text-center">
-                            <img src={product.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={product.nombre} className="w-24 h-24 rounded-lg object-cover mx-auto mb-4"/>
+                            <img loading="lazy" src={product.imagen_url || 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=...'} alt={product.nombre} className="w-24 h-24 rounded-lg object-cover mx-auto mb-4"/>
                             <h3 className="text-lg font-bold text-gray-800">{product.nombre}</h3>
                             <p className="text-blue-600 font-bold mb-4">${product.precio_unitario}</p>
                             <div className="flex items-center justify-center gap-4">
@@ -499,6 +596,8 @@
             const [editingPedido, setEditingPedido] = React.useState(null);
             const [productForQuantity, setProductForQuantity] = React.useState(null);
             const [pedidoParaPDF, setPedidoParaPDF] = React.useState(null);
+            const [selectedPedido, setSelectedPedido] = React.useState(null);
+            const [toast, setToast] = React.useState(null);
 
             // Guardado automático del pedido en progreso
             React.useEffect(() => {
@@ -576,7 +675,7 @@
                     doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
                 } catch (e) {
                     console.error("Error generando PDF:", e);
-                    alert("Error al generar el PDF. Verifica los datos del pedido.");
+                    setToast({ message: "Error al generar el PDF. Verifica los datos del pedido.", type: 'error' });
                 }
             };
 
@@ -653,16 +752,28 @@
                 setCurrentPage('pedido'); 
             };
 
+            const handleViewPedido = (pedido) => {
+                const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+                const clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id);
+                if (!clienteDelPedido) {
+                    setToast({ message: 'No se pudo encontrar el cliente para este pedido.', type: 'error' });
+                    return;
+                }
+                setSelectedCliente(clienteDelPedido);
+                setSelectedPedido(pedido);
+                setCurrentPage('pedido_detail');
+            };
+
             const handleEditPedido = (pedido) => { 
                 if (pedido.status === 'synced') {
-                    alert('No se puede editar un pedido ya sincronizado.');
+                    setToast({ message: 'No se puede editar un pedido ya sincronizado.', type: 'error' });
                     return;
                 }
                 const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]'); 
                 const allProducts = JSON.parse(localStorage.getItem('productos') || '[]'); 
                 let clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id); 
                 if (!clienteDelPedido) { 
-                    alert('No se pudo encontrar el cliente para este pedido.'); 
+                    setToast({ message: 'No se pudo encontrar el cliente para este pedido.', type: 'error' });
                     return; 
                 } 
                 setSelectedCliente(clienteDelPedido); 
@@ -697,7 +808,7 @@
                         const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } }); 
                         const clientesActualizados = await clientesRes.json(); 
                         localStorage.setItem('clientes', JSON.stringify(clientesActualizados)); 
-                        alert('¡Cliente guardado en el servidor!'); 
+                        setToast({ message: '¡Cliente guardado en el servidor!', type: 'success' });
                         setCurrentPage('clientes'); 
                         setEditingCliente(null); 
                         return; 
@@ -714,7 +825,7 @@
                     clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' }); 
                 } 
                 localStorage.setItem('clientes', JSON.stringify(clientes)); 
-                alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.'); 
+                setToast({ message: 'Cliente guardado localmente. Sincroniza cuando tengas conexión.', type: 'info' });
                 setCurrentPage('clientes'); 
                 setEditingCliente(null); 
             };
@@ -722,11 +833,11 @@
             const handleSync = async (isAuto = false) => { 
                 const syncToken = localStorage.getItem('vendedor_token'); 
                 if (!syncToken) { 
-                    if (!isAuto) alert('Error de autenticación.'); 
+                    if (!isAuto) setToast({ message: 'Error de autenticación.', type: 'error' });
                     return false; 
                 } 
                 if (!navigator.onLine) { 
-                    if (!isAuto) alert('No hay conexión a internet.'); 
+                    if (!isAuto) setToast({ message: 'No hay conexión a internet.', type: 'error' });
                     return false; 
                 } 
                 try { 
@@ -759,7 +870,7 @@
                     } 
                     let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); 
                     if (pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { 
-                        if (!isAuto) alert("No hay nada para sincronizar."); 
+                        if (!isAuto) setToast({ message: 'No hay nada para sincronizar.', type: 'info' });
                         return true; 
                     } 
                     for (let pedido of pedidosPendientes) { 
@@ -785,7 +896,7 @@
                     return true; 
                 } catch (error) { 
                     console.error('Error de red durante la sincronización:', error); 
-                    if (!isAuto) alert('Ocurrió un error durante la sincronización.'); 
+                    if (!isAuto) setToast({ message: 'Ocurrió un error durante la sincronización.', type: 'error' });
                     return false; 
                 } 
             };
@@ -842,6 +953,7 @@
                 localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
                 localStorage.removeItem(`pedido_progreso_${selectedCliente.id}`);
                 generateAndSavePDF(pedidoFinalizado, selectedCliente);
+                setToast({ message: 'Pedido guardado y PDF generado.', type: 'success' });
                 setPedidoParaPDF(pedidoFinalizado);
                 scheduleAutoSync();
             };
@@ -866,7 +978,9 @@
                     case 'summary':
                         return selectedCliente ? <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} /> : setCurrentPage('home');
                     case 'pendientes':
-                        return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
+                        return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onViewPedido={handleViewPedido} onDeletePedido={handleDeletePendingPedido} />;
+                    case 'pedido_detail':
+                        return selectedCliente && selectedPedido ? <PedidoDetailView pedido={selectedPedido} cliente={selectedCliente} onBack={() => setCurrentPage('pendientes')} /> : setCurrentPage('pendientes');
                     default:
                         return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
                 }
@@ -882,7 +996,7 @@
             }
 
             return (
-                <div id="main-app" className="no-print">
+                <div id="main-app" className="no-print relative">
                     {renderPage()}
                     {productForQuantity && (
                         <QuantityModal 
@@ -892,6 +1006,7 @@
                             onCancel={() => setProductForQuantity(null)}
                         />
                     )}
+                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
                 </div>
             );
         }
