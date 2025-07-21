@@ -12,9 +12,18 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+    <style>
+        @media print {
+            body, html { margin: 0; padding: 0; }
+            .no-print { display: none; }
+            #pdf-view { display: block !important; }
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <div id="root"></div>
+    <div id="pdf-view" class="hidden"></div>
+
     <script type="text/babel">
         const API_URL = 'https://distriapi.onzacore.site/api';
 
@@ -30,6 +39,17 @@
         const EditIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
         const TrashIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
         const HistoryIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>);
+
+        // --- Componente StatusBadge ---
+        const StatusBadge = ({ status }) => {
+            const styles = {
+                pending_sync: { text: 'Pendiente', bg: 'bg-yellow-100', text_color: 'text-yellow-800' },
+                synced: { text: 'Sincronizado', bg: 'bg-green-100', text_color: 'text-green-800' },
+                sync_failed: { text: 'Falló', bg: 'bg-red-100', text_color: 'text-red-800' },
+            };
+            const s = styles[status] || { text: 'Desconocido', bg: 'bg-gray-100', text_color: 'text-gray-800' };
+            return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.bg} ${s.text_color}`}>{s.text}</span>;
+        };
 
         // --- Componentes de Vistas ---
         const LoginPage = ({ onLogin, loading, error }) => {
@@ -152,7 +172,10 @@
                             pedidos.map(pedido => (
                                 <div key={pedido.id_local} className="bg-white p-4 rounded-lg shadow mb-3">
                                     <div className="flex justify-between items-center mb-2 pb-2 border-b">
-                                        <p className="font-bold text-gray-800">Pedido del {new Date(pedido.fecha).toLocaleDateString()}</p>
+                                        <div>
+                                            <p className="font-bold text-gray-800">Pedido del {new Date(pedido.fecha).toLocaleDateString()}</p>
+                                            <StatusBadge status={pedido.status} />
+                                        </div>
                                         <p className="font-semibold text-blue-600">Total: ${calcularTotal(pedido.items)}</p>
                                     </div>
                                     <ul className="text-sm text-gray-700 space-y-1">
@@ -281,13 +304,17 @@
             const [pedidos, setPedidos] = React.useState([]);
             const [syncing, setSyncing] = React.useState(false);
             const [syncStatus, setSyncStatus] = React.useState('');
-            React.useEffect(() => { setPedidos(JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]')); }, []);
+            React.useEffect(() => { 
+                const storedPedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                setPedidos(storedPedidos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 30)); 
+            }, []);
             const handleSync = async () => {
                 setSyncing(true); setSyncStatus('Sincronizando...');
                 const success = await onSync();
-                if(success) { setSyncStatus('¡Sincronización completa!'); setPedidos([]); } 
+                if(success) { setSyncStatus('¡Sincronización completa!'); } 
                 else { setSyncStatus('Error al sincronizar. Revisa tu conexión.'); }
                 setSyncing(false); setTimeout(() => setSyncStatus(''), 3000);
+                setPedidos(JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]').sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 30));
             };
             const handleDelete = (pedidoId) => {
                 if (window.confirm('¿Estás seguro de que quieres eliminar este pedido pendiente?')) {
@@ -312,9 +339,10 @@
                                     <p className="font-bold text-gray-800">Pedido para: {JSON.parse(localStorage.getItem('clientes') || '[]').find(c => c.id === p.cliente_id)?.nombre_comercio || 'Cliente no encontrado'}</p>
                                     <p className="text-sm text-gray-600">{p.items.length} items</p>
                                     <p className="text-xs text-gray-400">Creado: {new Date(p.fecha).toLocaleString()}</p>
+                                    <StatusBadge status={p.status} />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => onEditPedido(p)} className="text-gray-400 hover:text-blue-600 p-2"><EditIcon className="h-5 w-5"/></button>
+                                    <button onClick={() => onEditPedido(p)} disabled={p.status === 'synced'} className="text-gray-400 hover:text-blue-600 p-2 disabled:opacity-50"><EditIcon className="h-5 w-5"/></button>
                                     <button onClick={() => handleDelete(p.id_local)} className="text-gray-400 hover:text-red-600 p-2"><TrashIcon className="h-5 w-5"/></button>
                                 </div>
                             </div>
@@ -396,6 +424,68 @@
             );
         };
 
+        const PedidoPDFView = ({ pedido, cliente, productos, onBack }) => {
+            React.useEffect(() => {
+                window.print();
+            }, []);
+
+            const totalPedido = pedido.items.reduce((acc, item) => {
+                const producto = productos.find(p => p.id === item.producto_id);
+                return acc + (producto ? producto.precio_unitario * item.cantidad : 0);
+            }, 0);
+
+            return (
+                <div className="p-8 font-sans">
+                    <button onClick={onBack} className="no-print mb-4 bg-gray-200 text-gray-800 py-2 px-4 rounded">Volver</button>
+                    <div className="text-center mb-6">
+                        <h1 className="text-2xl font-bold">Resumen de Pedido</h1>
+                    </div>
+                    <div className="flex justify-between mb-4 text-sm">
+                        <div>
+                            <p><b>Cliente:</b> {cliente.nombre_comercio}</p>
+                            <p><b>Dirección:</b> {cliente.direccion || 'No especificada'}</p>
+                        </div>
+                        <div>
+                            <p><b>Fecha:</b> {new Date(pedido.fecha).toLocaleDateString()}</p>
+                            <p><b>Pedido Local N°:</b> {pedido.id_local}</p>
+                        </div>
+                    </div>
+                    <table className="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr className="bg-gray-100">
+                                <th className="p-2 border">Cant.</th>
+                                <th className="p-2 border">Producto</th>
+                                <th className="p-2 border text-right">P. Unit.</th>
+                                <th className="p-2 border text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pedido.items.map(item => {
+                                const producto = productos.find(p => p.id === item.producto_id);
+                                return (
+                                    <tr key={item.producto_id}>
+                                        <td className="p-2 border">{item.cantidad}</td>
+                                        <td className="p-2 border">{producto ? producto.nombre : 'Producto no encontrado'}</td>
+                                        <td className="p-2 border text-right">${producto ? parseFloat(producto.precio_unitario).toFixed(2) : '0.00'}</td>
+                                        <td className="p-2 border text-right">${producto ? (item.cantidad * producto.precio_unitario).toFixed(2) : '0.00'}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                    <div className="text-right mt-4 font-bold text-lg">
+                        Total: ${totalPedido.toFixed(2)}
+                    </div>
+                    {pedido.notas_entrega && (
+                        <div className="mt-4 text-sm">
+                            <h3 className="font-bold">Notas:</h3>
+                            <p className="border p-2 mt-1 bg-gray-50">{pedido.notas_entrega}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // --- Componente Principal de la Aplicación ---
         function App() {
             const [token, setToken] = React.useState(localStorage.getItem('vendedor_token'));
@@ -408,74 +498,86 @@
             const [currentPedido, setCurrentPedido] = React.useState([]);
             const [editingPedido, setEditingPedido] = React.useState(null);
             const [productForQuantity, setProductForQuantity] = React.useState(null);
+            const [pedidoParaPDF, setPedidoParaPDF] = React.useState(null);
 
             // Guardado automático del pedido en progreso
             React.useEffect(() => {
-                if (selectedCliente && currentPage === 'pedido') {
-                    localStorage.setItem(`pedido_progreso_${selectedCliente.id}`, JSON.stringify(currentPedido));
+                if (selectedCliente && (currentPage === 'pedido' || currentPage === 'summary')) {
+                    const dataToSave = { items: currentPedido, editingPedido };
+                    localStorage.setItem(`pedido_progreso_${selectedCliente.id}`, JSON.stringify(dataToSave));
                 }
-            }, [currentPedido, selectedCliente, currentPage]);
+            }, [currentPedido, editingPedido, selectedCliente, currentPage]);
 
             const generateAndSavePDF = (pedidoData, clienteData) => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                doc.setFontSize(20);
-                doc.text("Resumen de Pedido", 105, 20, null, null, "center");
-                
-                doc.setFontSize(12);
-                doc.text(`Cliente: ${clienteData.nombre_comercio}`, 14, 30);
-                doc.text(`Fecha: ${new Date(pedidoData.fecha).toLocaleString()}`, 14, 37);
-                
-                const tableColumn = ["Cant.", "Producto", "P. Unit.", "Subtotal"];
-                const tableRows = [];
-                let total = 0;
-
-                pedidoData.items.forEach(item => {
-                    const producto = JSON.parse(localStorage.getItem('productos') || '[]').find(p => p.id === item.producto_id);
-                    if(producto) {
-                        const subtotal = item.cantidad * producto.precio_unitario;
-                        total += subtotal;
-                        const itemData = [
-                            item.cantidad,
-                            producto.nombre,
-                            `$${producto.precio_unitario.toFixed(2)}`,
-                            `$${subtotal.toFixed(2)}`
-                        ];
-                        tableRows.push(itemData);
-                    }
-                });
-
-                let finalY = 45;
-                if (tableRows.length > 0) {
-                    doc.autoTable({
-                        startY: finalY,
-                        head: [tableColumn],
-                        body: tableRows,
-                    });
-                    finalY = doc.autoTable.previous.finalY;
-                }
-
-                doc.setFontSize(14);
-                doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, finalY + 10);
-                
-                if(pedidoData.notas_entrega) {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Encabezado
+                    doc.setFontSize(20);
+                    doc.text("Resumen de Pedido", 105, 20, { align: "center" });
+                    
+                    // Información del cliente y pedido
                     doc.setFontSize(12);
-                    doc.text("Notas:", 14, finalY + 20);
-                    doc.text(pedidoData.notas_entrega, 14, finalY + 27);
-                }
-                
-                doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
-            };
+                    doc.text(`Cliente: ${clienteData.nombre_comercio}`, 14, 30);
+                    doc.text(`Dirección: ${clienteData.direccion || 'No especificada'}`, 14, 37);
+                    doc.text(`Fecha: ${new Date(pedidoData.fecha).toLocaleString()}`, 14, 44);
+                    doc.text(`Pedido Local N°: ${pedidoData.id_local}`, 14, 51);
+                    
+                    // Tabla de items
+                    const tableColumn = ["Cant.", "Producto", "P. Unit.", "Subtotal"];
+                    const tableRows = [];
+                    let total = 0;
+                    const productos = JSON.parse(localStorage.getItem('productos') || '[]');
 
-            const manageLocalPedidos = (nuevoPedido) => {
-                let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
-                pedidos.push(nuevoPedido);
-                if (pedidos.length > 30) {
-                    pedidos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-                    pedidos.shift();
+                    pedidoData.items.forEach(item => {
+                        const producto = productos.find(p => p.id === item.producto_id);
+                        if (producto) {
+                            const subtotal = item.cantidad * producto.precio_unitario;
+                            total += subtotal;
+                            tableRows.push([
+                                item.cantidad,
+                                producto.nombre,
+                                `$${parseFloat(producto.precio_unitario).toFixed(2)}`,
+                                `$${subtotal.toFixed(2)}`
+                            ]);
+                        }
+                    });
+
+                    let finalY = 60;
+                    if (tableRows.length > 0) {
+                        doc.autoTable({
+                            startY: finalY,
+                            head: [tableColumn],
+                            body: tableRows,
+                            theme: 'striped',
+                            styles: { fontSize: 10, cellPadding: 2 },
+                            headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
+                        });
+                        finalY = doc.lastAutoTable.finalY;
+                    } else {
+                        doc.text("No se encontraron productos válidos.", 14, finalY);
+                        finalY += 10;
+                    }
+
+                    // Total
+                    doc.setFontSize(14);
+                    doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, finalY + 10);
+                    
+                    // Notas
+                    if (pedidoData.notas_entrega) {
+                        doc.setFontSize(12);
+                        doc.text("Notas:", 14, finalY + 20);
+                        doc.setFontSize(10);
+                        doc.text(pedidoData.notas_entrega, 14, finalY + 27, { maxWidth: 180 });
+                    }
+                    
+                    // Descarga automática
+                    doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
+                } catch (e) {
+                    console.error("Error generando PDF:", e);
+                    alert("Error al generar el PDF. Verifica los datos del pedido.");
                 }
-                localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
             };
 
             const scheduleAutoSync = () => {
@@ -487,7 +589,7 @@
                         if (!success) {
                             console.log("Auto-sync falló. Reintentando en 5 minutos.");
                             setTimeout(async () => {
-                                if(navigator.onLine){
+                                if (navigator.onLine) {
                                     console.log("Intentando auto-sync (intento 2)...");
                                     await handleSync(true);
                                 }
@@ -528,7 +630,8 @@
             }, []);
 
             const handleLogout = React.useCallback(() => { 
-                localStorage.clear(); 
+                localStorage.removeItem('vendedor_token'); 
+                localStorage.removeItem('vendedor_user'); 
                 setToken(null); 
                 setUser(null); 
                 setCurrentPage('home'); 
@@ -540,15 +643,21 @@
                 setSelectedCliente(cliente); 
                 const pedidoEnProgreso = localStorage.getItem(`pedido_progreso_${cliente.id}`);
                 if (pedidoEnProgreso) {
-                    setCurrentPedido(JSON.parse(pedidoEnProgreso));
+                    const data = JSON.parse(pedidoEnProgreso);
+                    setCurrentPedido(data.items || []);
+                    setEditingPedido(data.editingPedido || null);
                 } else {
                     setCurrentPedido([]);
+                    setEditingPedido(null);
                 }
-                setEditingPedido(null); 
                 setCurrentPage('pedido'); 
             };
 
             const handleEditPedido = (pedido) => { 
+                if (pedido.status === 'synced') {
+                    alert('No se puede editar un pedido ya sincronizado.');
+                    return;
+                }
                 const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]'); 
                 const allProducts = JSON.parse(localStorage.getItem('productos') || '[]'); 
                 let clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id); 
@@ -634,34 +743,43 @@
                         const newServerClient = await response.json(); 
                         if (response.ok) { 
                             localIdToServerIdMap[localId] = newServerClient.id; 
-                        } 
+                        } else {
+                            throw new Error('Error al crear cliente');
+                        }
                     } 
                     const clientesToUpdate = clientes.filter(c => c.status === 'pending_update'); 
                     for (const cliente of clientesToUpdate) { 
                         const { status, ...clientePayload } = cliente; 
-                        await fetch(`${API_URL}/clientes/${cliente.id}`, { 
+                        const response = await fetch(`${API_URL}/clientes/${cliente.id}`, { 
                             method: 'PUT', 
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, 
                             body: JSON.stringify(clientePayload) 
                         }); 
+                        if (!response.ok) throw new Error('Error al actualizar cliente');
                     } 
-                    const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); 
-                    if(pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { 
-                        if(!isAuto) alert("No hay nada para sincronizar."); 
+                    let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); 
+                    if (pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { 
+                        if (!isAuto) alert("No hay nada para sincronizar."); 
                         return true; 
                     } 
                     for (let pedido of pedidosPendientes) { 
+                        if (pedido.status === 'synced') continue;
                         if (localIdToServerIdMap[pedido.cliente_id]) { 
                             pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; 
                         } 
                         const { id_local, status, ...pedidoPayload } = pedido; 
-                        await fetch(`${API_URL}/pedidos`, { 
+                        const response = await fetch(`${API_URL}/pedidos`, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, 
                             body: JSON.stringify(pedidoPayload) 
                         }); 
+                        if (response.ok) {
+                            pedido.status = 'synced';
+                        } else {
+                            pedido.status = 'sync_failed';
+                        }
                     } 
-                    localStorage.setItem('pedidos_pendientes', '[]'); 
+                    localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes)); 
                     const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } }); 
                     localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); 
                     return true; 
@@ -705,32 +823,27 @@
             };
 
             const handleSavePedido = (notas) => {
-                const clienteData = selectedCliente;
-                let nuevoPedido;
-                let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                let pedidoFinalizado;
 
                 if (editingPedido) {
-                    nuevoPedido = { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas };
-                    pedidosPendientes = pedidosPendientes.map(p => p.id_local === editingPedido.id_local ? nuevoPedido : p);
-                    localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes));
+                    pedidoFinalizado = { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, status: 'pending_sync' };
+                    pedidos = pedidos.map(p => p.id_local === editingPedido.id_local ? pedidoFinalizado : p);
                 } else {
-                    nuevoPedido = { id_local: Date.now(), cliente_id: clienteData.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
-                    manageLocalPedidos(nuevoPedido);
-                    scheduleAutoSync();
+                    pedidoFinalizado = { id_local: Date.now(), cliente_id: selectedCliente.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
+                    pedidos.push(pedidoFinalizado);
                 }
-                
-                try {
-                    generateAndSavePDF(nuevoPedido, clienteData);
-                    alert('¡Pedido guardado localmente y PDF generado!');
-                } catch(e) {
-                    console.error("Error generando PDF:", e);
-                    alert('Pedido guardado localmente, pero hubo un error al generar el PDF.');
+
+                if (pedidos.length > 30) {
+                    pedidos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                    pedidos = pedidos.slice(0, 30);
                 }
-                
+
+                localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
                 localStorage.removeItem(`pedido_progreso_${selectedCliente.id}`);
-                setCurrentPage('home');
-                setEditingPedido(null);
-                setCurrentPedido([]);
+                generateAndSavePDF(pedidoFinalizado, selectedCliente);
+                setPedidoParaPDF(pedidoFinalizado);
+                scheduleAutoSync();
             };
 
             // --- Lógica de Renderizado ---
@@ -763,8 +876,13 @@
                 return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
             }
 
+            if (pedidoParaPDF) {
+                const productos = JSON.parse(localStorage.getItem('productos') || '[]');
+                return <PedidoPDFView pedido={pedidoParaPDF} cliente={selectedCliente} productos={productos} onBack={() => { setPedidoParaPDF(null); setCurrentPage('home'); setEditingPedido(null); setCurrentPedido([]); }} />;
+            }
+
             return (
-                <React.Fragment>
+                <div id="main-app" className="no-print">
                     {renderPage()}
                     {productForQuantity && (
                         <QuantityModal 
@@ -774,7 +892,7 @@
                             onCancel={() => setProductForQuantity(null)}
                         />
                     )}
-                </React.Fragment>
+                </div>
             );
         }
 
