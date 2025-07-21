@@ -16,10 +16,9 @@
 <body class="bg-gray-100">
     <div id="root"></div>
     <script type="text/babel">
-        // CORRECCIÓN: URL de la API completa
         const API_URL = 'https://distriapi.onzacore.site/api';
 
-        // --- Componentes de Iconos (Sin cambios) ---
+        // --- Componentes de Iconos ---
         const PackageIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z"/><path d="M19 13.3a9 9 0 1 1-14 0"/><path d="M12 17.5a2.5 2.5 0 0 1-2.5-2.5V9.4h5v5.6a2.5 2.5 0 0 1-2.5 2.5Z"/></svg>);
         const Spinner = ({ className }) => (<div className={`animate-spin rounded-full h-6 w-6 border-b-2 ${className || 'border-white'}`}></div>);
         const UsersIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
@@ -30,26 +29,28 @@
         const PlusIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
         const EditIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
         const TrashIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
-        
+        const HistoryIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>);
+
         // --- Componentes de Vistas ---
         const LoginPage = ({ onLogin, loading, error }) => {
-          const [email, setEmail] = React.useState('');
-          const [password, setPassword] = React.useState('');
-          const handleSubmit = (e) => { e.preventDefault(); onLogin(email, password); };
-          return (
-            <div className="min-h-screen bg-blue-600 flex flex-col justify-center items-center p-4 font-sans">
-              <div className="text-center mb-10"><PackageIcon className="h-20 w-20 text-white mx-auto" /><h1 className="text-4xl font-bold text-white mt-4">Distribuidora</h1><p className="text-blue-200">App de Ventas</p></div>
-              <div className="w-full max-w-sm">
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8">
-                  <div className="mb-5"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">Correo de Vendedor</label><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="pablo@distribuidora.com" className="w-full px-4 py-3 rounded-lg bg-gray-100 focus:border-blue-500 focus:bg-white focus:outline-none" required /></div>
-                  <div className="mb-6"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">Contraseña</label><input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" className="w-full px-4 py-3 rounded-lg bg-gray-100 focus:border-blue-500 focus:bg-white focus:outline-none" required /></div>
-                  {error && <p className="text-red-500 text-xs italic mb-4 text-center">{error}</p>}
-                  <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center text-lg">{loading ? <Spinner /> : 'Ingresar'}</button>
-                </form>
-              </div>
-            </div>
-          );
+            const [email, setEmail] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const handleSubmit = (e) => { e.preventDefault(); onLogin(email, password); };
+            return (
+                <div className="min-h-screen bg-blue-600 flex flex-col justify-center items-center p-4 font-sans">
+                    <div className="text-center mb-10"><PackageIcon className="h-20 w-20 text-white mx-auto" /><h1 className="text-4xl font-bold text-white mt-4">Distribuidora</h1><p className="text-blue-200">App de Ventas</p></div>
+                    <div className="w-full max-w-sm">
+                        <div className="bg-white rounded-2xl shadow-lg p-8">
+                            <div className="mb-5"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">Correo de Vendedor</label><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="pablo@distribuidora.com" className="w-full px-4 py-3 rounded-lg bg-gray-100 focus:border-blue-500 focus:bg-white focus:outline-none" required /></div>
+                            <div className="mb-6"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">Contraseña</label><input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" className="w-full px-4 py-3 rounded-lg bg-gray-100 focus:border-blue-500 focus:bg-white focus:outline-none" required /></div>
+                            {error && <p className="text-red-500 text-xs italic mb-4 text-center">{error}</p>}
+                            <button onClick={handleSubmit} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center text-lg">{loading ? <Spinner /> : 'Ingresar'}</button>
+                        </div>
+                    </div>
+                </div>
+            );
         };
+
         const VendedorHomePage = ({ user, onLogout, setCurrentPage }) => {
             const [pendingCount, setPendingCount] = React.useState(0);
             React.useEffect(() => {
@@ -69,6 +70,7 @@
                 </div>
             );
         };
+
         const ActionButton = ({ icon, text, onClick, badge }) => (
             <button onClick={onClick} className="bg-white p-4 rounded-xl shadow-md flex flex-col items-center justify-center text-center hover:bg-gray-50 active:scale-95 transition-transform relative">
                 {badge > 0 && <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">{badge}</span>}
@@ -76,7 +78,8 @@
                 <span className="font-semibold text-gray-700">{text}</span>
             </button>
         );
-        const ClientesView = ({ onBack, onSelectCliente, onEditCliente, onAddCliente }) => {
+
+        const ClientesView = ({ onBack, onSelectCliente, onEditCliente, onAddCliente, onShowHistory }) => {
             const [clientes, setClientes] = React.useState([]);
             const [loading, setLoading] = React.useState(true);
             const [searchTerm, setSearchTerm] = React.useState('');
@@ -86,6 +89,7 @@
                 setLoading(false);
             }, []);
             const filteredClientes = clientes.filter(cliente => cliente.nombre_comercio.toLowerCase().includes(searchTerm.toLowerCase()));
+            
             return (
                 <div className="bg-gray-100 min-h-screen">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
@@ -101,7 +105,10 @@
                                     <p className="font-bold text-gray-800">{cliente.nombre_comercio}</p>
                                     <p className="text-sm text-gray-600">{cliente.direccion}</p>
                                 </div>
-                                <button onClick={() => onEditCliente(cliente)} className="ml-4 text-gray-400 hover:text-blue-600 p-2"><EditIcon className="h-5 w-5"/></button>
+                                <div className="flex items-center">
+                                    <button onClick={() => onShowHistory(cliente)} className="ml-4 text-gray-400 hover:text-blue-600 p-2"><HistoryIcon className="h-5 w-5"/></button>
+                                    <button onClick={() => onEditCliente(cliente)} className="ml-2 text-gray-400 hover:text-blue-600 p-2"><EditIcon className="h-5 w-5"/></button>
+                                </div>
                             </div>
                         ))}
                         {!loading && filteredClientes.length === 0 && (<p className="text-center text-gray-500 mt-8">No se encontraron clientes.</p>)}
@@ -109,6 +116,64 @@
                 </div>
             );
         };
+
+        const HistorialClienteView = ({ cliente, onBack }) => {
+            const [pedidos, setPedidos] = React.useState([]);
+            const [productos, setProductos] = React.useState([]);
+
+            React.useEffect(() => {
+                const todosLosPedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                const productosGuardados = JSON.parse(localStorage.getItem('productos') || '[]');
+                const pedidosDelCliente = todosLosPedidos.filter(p => p.cliente_id === cliente.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                setPedidos(pedidosDelCliente);
+                setProductos(productosGuardados);
+            }, [cliente.id]);
+
+            const calcularTotal = (items) => {
+                return items.reduce((total, item) => {
+                    const producto = productos.find(p => p.id === item.producto_id);
+                    return total + (producto ? producto.precio_unitario * item.cantidad : 0);
+                }, 0).toFixed(2);
+            };
+
+            return (
+                <div className="bg-gray-100 min-h-screen">
+                    <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
+                        <button onClick={onBack} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
+                        <div>
+                            <h2 className="font-bold text-lg">Historial de Pedidos</h2>
+                            <p className="text-xs text-gray-500">{cliente.nombre_comercio}</p>
+                        </div>
+                    </header>
+                    <main className="p-4">
+                        {pedidos.length === 0 ? (
+                            <p className="text-center text-gray-500 mt-8">No hay pedidos pendientes para este cliente.</p>
+                        ) : (
+                            pedidos.map(pedido => (
+                                <div key={pedido.id_local} className="bg-white p-4 rounded-lg shadow mb-3">
+                                    <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                        <p className="font-bold text-gray-800">Pedido del {new Date(pedido.fecha).toLocaleDateString()}</p>
+                                        <p className="font-semibold text-blue-600">Total: ${calcularTotal(pedido.items)}</p>
+                                    </div>
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                        {pedido.items.map(item => {
+                                            const producto = productos.find(p => p.id === item.producto_id);
+                                            return (
+                                                <li key={item.producto_id} className="flex justify-between">
+                                                    <span>{item.cantidad} x {producto ? producto.nombre : 'Producto no encontrado'}</span>
+                                                    <span>${producto ? (item.cantidad * producto.precio_unitario).toFixed(2) : '0.00'}</span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            ))
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
         const PedidoView = ({ cliente, onBack, onShowCart, cart, onProductSelect }) => {
             const [productos, setProductos] = React.useState([]);
             const [searchTerm, setSearchTerm] = React.useState('');
@@ -154,6 +219,7 @@
                 </div>
             );
         };
+
         const PedidoSummaryView = ({ cliente, pedido, setPedido, onBack, onSave, editingPedido, onCancelEdit, onAddMoreProducts }) => {
             const [notas, setNotas] = React.useState(editingPedido ? editingPedido.notas_entrega : '');
             
@@ -170,14 +236,14 @@
             const totalPedido = pedido.reduce((acc, item) => acc + (item.producto.precio_unitario * item.cantidad), 0);
 
             return (
-                 <div className="flex flex-col h-screen bg-gray-100">
+                <div className="flex flex-col h-screen bg-gray-100">
                     <header className="bg-white p-4 shadow-md sticky top-0 flex items-center gap-4 z-10">
                         <button onClick={() => onBack(pedido)} className="text-blue-600"><ArrowLeftIcon className="h-6 w-6"/></button>
                         <div><h2 className="font-bold text-lg">{editingPedido ? 'Editar Pedido' : 'Revisar Pedido'}</h2><p className="text-xs text-gray-500">{cliente.nombre_comercio}</p></div>
                     </header>
                     <main className="flex-1 overflow-y-auto p-4">
                         <button onClick={() => onAddMoreProducts(pedido)} className="w-full bg-blue-100 text-blue-800 font-semibold py-3 rounded-lg mb-4 flex items-center justify-center gap-2">
-                           <PlusIcon className="h-5 w-5"/> Agregar más productos
+                            <PlusIcon className="h-5 w-5"/> Agregar más productos
                         </button>
                         {pedido.length === 0 && <p className="text-center text-gray-500 mt-8">El carrito está vacío.</p>}
                         {pedido.map(item => (
@@ -210,6 +276,7 @@
                 </div>
             );
         };
+
         const PedidosPendientesView = ({ onBack, onSync, onEditPedido, onDeletePedido }) => {
             const [pedidos, setPedidos] = React.useState([]);
             const [syncing, setSyncing] = React.useState(false);
@@ -256,6 +323,7 @@
                 </div>
             );
         };
+
         const QuantityModal = ({ product, existingQuantity, onSave, onCancel }) => {
             const [quantity, setQuantity] = React.useState(existingQuantity || 1);
 
@@ -294,6 +362,7 @@
                 </div>
             );
         };
+
         const ClienteFormView = ({ onBack, cliente, onSave }) => {
             const [formData, setFormData] = React.useState({ nombre_comercio: '', nombre_contacto: '', direccion: '', telefono: '' });
             const isEditing = cliente !== null;
@@ -315,13 +384,13 @@
                         <h2 className="font-bold text-lg">{isEditing ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
                     </header>
                     <main className="p-4">
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-4">
                             <div><label className="text-sm font-medium">Nombre del Comercio</label><input type="text" name="nombre_comercio" value={formData.nombre_comercio} onChange={handleChange} className="w-full p-2 border rounded-lg mt-1" required /></div>
                             <div><label className="text-sm font-medium">Nombre del Contacto</label><input type="text" name="nombre_contacto" value={formData.nombre_contacto} onChange={handleChange} className="w-full p-2 border rounded-lg mt-1" /></div>
                             <div><label className="text-sm font-medium">Dirección</label><input type="text" name="direccion" value={formData.direccion} onChange={handleChange} className="w-full p-2 border rounded-lg mt-1" /></div>
                             <div><label className="text-sm font-medium">Teléfono</label><input type="text" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full p-2 border rounded-lg mt-1" /></div>
-                            <button type="submit" className="w-full bg-green-500 text-white font-bold py-3 rounded-lg mt-4">Guardar Cliente</button>
-                        </form>
+                            <button onClick={handleSubmit} className="w-full bg-green-500 text-white font-bold py-3 rounded-lg mt-4">Guardar Cliente</button>
+                        </div>
                     </main>
                 </div>
             );
@@ -329,179 +398,384 @@
 
         // --- Componente Principal de la Aplicación ---
         function App() {
-          const [token, setToken] = React.useState(localStorage.getItem('vendedor_token'));
-          const [user, setUser] = React.useState(JSON.parse(localStorage.getItem('vendedor_user')));
-          const [loading, setLoading] = React.useState(false);
-          const [error, setError] = React.useState(null);
-          const [currentPage, setCurrentPage] = React.useState('home');
-          const [selectedCliente, setSelectedCliente] = React.useState(null);
-          const [editingCliente, setEditingCliente] = React.useState(null);
-          const [currentPedido, setCurrentPedido] = React.useState([]);
-          const [editingPedido, setEditingPedido] = React.useState(null);
-          const [productForQuantity, setProductForQuantity] = React.useState(null);
+            const [token, setToken] = React.useState(localStorage.getItem('vendedor_token'));
+            const [user, setUser] = React.useState(JSON.parse(localStorage.getItem('vendedor_user')));
+            const [loading, setLoading] = React.useState(false);
+            const [error, setError] = React.useState(null);
+            const [currentPage, setCurrentPage] = React.useState('home');
+            const [selectedCliente, setSelectedCliente] = React.useState(null);
+            const [editingCliente, setEditingCliente] = React.useState(null);
+            const [currentPedido, setCurrentPedido] = React.useState([]);
+            const [editingPedido, setEditingPedido] = React.useState(null);
+            const [productForQuantity, setProductForQuantity] = React.useState(null);
 
-          // --- Handlers (Lógica principal) ---
-          
-          const generateAndSavePDF = (pedidoData, clienteData) => {
-              const { jsPDF } = window.jspdf;
-              const doc = new jsPDF();
-              
-              doc.setFontSize(20);
-              doc.text("Resumen de Pedido", 105, 20, null, null, "center");
-              
-              doc.setFontSize(12);
-              doc.text(`Cliente: ${clienteData.nombre_comercio}`, 14, 30);
-              doc.text(`Fecha: ${new Date(pedidoData.fecha).toLocaleString()}`, 14, 37);
-              
-              const tableColumn = ["Cant.", "Producto", "P. Unit.", "Subtotal"];
-              const tableRows = [];
-              let total = 0;
+            // Guardado automático del pedido en progreso
+            React.useEffect(() => {
+                if (selectedCliente && currentPage === 'pedido') {
+                    localStorage.setItem(`pedido_progreso_${selectedCliente.id}`, JSON.stringify(currentPedido));
+                }
+            }, [currentPedido, selectedCliente, currentPage]);
 
-              pedidoData.items.forEach(item => {
-                  const producto = JSON.parse(localStorage.getItem('productos') || '[]').find(p => p.id === item.producto_id);
-                  if(producto) {
-                      const subtotal = item.cantidad * producto.precio_unitario;
-                      total += subtotal;
-                      const itemData = [
-                          item.cantidad,
-                          producto.nombre,
-                          `$${producto.precio_unitario.toFixed(2)}`,
-                          `$${subtotal.toFixed(2)}`
-                      ];
-                      tableRows.push(itemData);
-                  }
-              });
+            const generateAndSavePDF = (pedidoData, clienteData) => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text("Resumen de Pedido", 105, 20, null, null, "center");
+                
+                doc.setFontSize(12);
+                doc.text(`Cliente: ${clienteData.nombre_comercio}`, 14, 30);
+                doc.text(`Fecha: ${new Date(pedidoData.fecha).toLocaleString()}`, 14, 37);
+                
+                const tableColumn = ["Cant.", "Producto", "P. Unit.", "Subtotal"];
+                const tableRows = [];
+                let total = 0;
 
-              let finalY = 45; // Posición inicial por defecto
-
-              // CORRECCIÓN: Solo dibuja la tabla si hay items
-              if (tableRows.length > 0) {
-                doc.autoTable({
-                    startY: finalY,
-                    head: [tableColumn],
-                    body: tableRows,
+                pedidoData.items.forEach(item => {
+                    const producto = JSON.parse(localStorage.getItem('productos') || '[]').find(p => p.id === item.producto_id);
+                    if(producto) {
+                        const subtotal = item.cantidad * producto.precio_unitario;
+                        total += subtotal;
+                        const itemData = [
+                            item.cantidad,
+                            producto.nombre,
+                            `$${producto.precio_unitario.toFixed(2)}`,
+                            `$${subtotal.toFixed(2)}`
+                        ];
+                        tableRows.push(itemData);
+                    }
                 });
-                finalY = doc.autoTable.previous.finalY; // Actualiza la posición si la tabla se dibujó
-              }
 
-              doc.setFontSize(14);
-              doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, finalY + 10);
-              
-              if(pedidoData.notas_entrega) {
-                  doc.setFontSize(12);
-                  doc.text("Notas:", 14, finalY + 20);
-                  doc.text(pedidoData.notas_entrega, 14, finalY + 27);
-              }
-              
-              doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
-          };
+                let finalY = 45;
+                if (tableRows.length > 0) {
+                    doc.autoTable({
+                        startY: finalY,
+                        head: [tableColumn],
+                        body: tableRows,
+                    });
+                    finalY = doc.autoTable.previous.finalY;
+                }
 
-          const manageLocalPedidos = (nuevoPedido) => {
-              let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
-              pedidos.push(nuevoPedido);
-              // Si hay más de 30, elimina el más antiguo
-              if (pedidos.length > 30) {
-                  pedidos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)); // Ordena por fecha ascendente
-                  pedidos.shift(); // Elimina el primer elemento (el más viejo)
-              }
-              localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
-          };
+                doc.setFontSize(14);
+                doc.text(`Total del Pedido: $${total.toFixed(2)}`, 14, finalY + 10);
+                
+                if(pedidoData.notas_entrega) {
+                    doc.setFontSize(12);
+                    doc.text("Notas:", 14, finalY + 20);
+                    doc.text(pedidoData.notas_entrega, 14, finalY + 27);
+                }
+                
+                doc.save(`pedido_${clienteData.nombre_comercio}_${pedidoData.id_local}.pdf`);
+            };
 
-          const scheduleAutoSync = () => {
-              console.log("Auto-sync programado para dentro de 60 segundos.");
-              setTimeout(async () => {
-                  if (navigator.onLine) {
-                      console.log("Intentando auto-sync (intento 1)...");
-                      const success = await handleSync(true); // true para modo silencioso
-                      if (!success) {
-                          console.log("Auto-sync falló. Reintentando en 5 minutos.");
-                          setTimeout(async () => {
-                              if(navigator.onLine){
-                                console.log("Intentando auto-sync (intento 2)...");
-                                await handleSync(true);
-                              }
-                          }, 300000); // 5 minutos
-                      }
-                  }
-              }, 60000); // 1 minuto
-          };
-          
-          const handleSavePedido = (notas) => {
-              const clienteData = selectedCliente;
-              let nuevoPedido;
-              let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+            const manageLocalPedidos = (nuevoPedido) => {
+                let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+                pedidos.push(nuevoPedido);
+                if (pedidos.length > 30) {
+                    pedidos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+                    pedidos.shift();
+                }
+                localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos));
+            };
 
-              if (editingPedido) {
-                  // Actualizar un pedido existente
-                  nuevoPedido = { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas };
-                  pedidosPendientes = pedidosPendientes.map(p => p.id_local === editingPedido.id_local ? nuevoPedido : p);
-                  localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes));
-              } else {
-                  // Crear un nuevo pedido
-                  nuevoPedido = { id_local: Date.now(), cliente_id: clienteData.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
-                  manageLocalPedidos(nuevoPedido);
-                  scheduleAutoSync(); // Programar auto-sync solo para pedidos nuevos
-              }
-              
-              try {
-                  generateAndSavePDF(nuevoPedido, clienteData);
-                  alert('¡Pedido guardado localmente y PDF generado!');
-              } catch(e) {
-                  console.error("Error generando PDF:", e);
-                  alert('Pedido guardado localmente, pero hubo un error al generar el PDF.');
-              }
-              
-              setCurrentPage('home');
-              setEditingPedido(null);
-          };
+            const scheduleAutoSync = () => {
+                console.log("Auto-sync programado para dentro de 60 segundos.");
+                setTimeout(async () => {
+                    if (navigator.onLine) {
+                        console.log("Intentando auto-sync (intento 1)...");
+                        const success = await handleSync(true);
+                        if (!success) {
+                            console.log("Auto-sync falló. Reintentando en 5 minutos.");
+                            setTimeout(async () => {
+                                if(navigator.onLine){
+                                    console.log("Intentando auto-sync (intento 2)...");
+                                    await handleSync(true);
+                                }
+                            }, 300000);
+                        }
+                    }
+                }, 60000);
+            };
 
-          // El resto de los handlers (handleLogin, handleLogout, handleSync, etc.) no necesitan cambios
-          const handleLogin = React.useCallback(async (email, password) => { setLoading(true); setError(null); try { const loginResponse = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const data = await loginResponse.json(); if (!loginResponse.ok) throw new Error(data.message || 'Error al iniciar sesión.'); if (data.user.rol !== 'vendedor' && data.user.rol !== 'admin') throw new Error('Acceso denegado.'); const tempToken = data.token; const [clientesRes, productosRes] = await Promise.all([ fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${tempToken}` } }), fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${tempToken}` } }) ]); if (!clientesRes.ok || !productosRes.ok) throw new Error('Error al sincronizar datos.'); localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); localStorage.setItem('productos', JSON.stringify(await productosRes.json())); localStorage.setItem('vendedor_token', tempToken); localStorage.setItem('vendedor_user', JSON.stringify(data.user)); setToken(tempToken); setUser(data.user); } catch (err) { setError(err.message); } finally { setLoading(false); } }, []);
-          const handleLogout = React.useCallback(() => { localStorage.clear(); setToken(null); setUser(null); setCurrentPage('home'); setSelectedCliente(null); setCurrentPedido([]); }, []);
-          const handleSelectCliente = (cliente) => { setSelectedCliente(cliente); setCurrentPedido([]); setEditingPedido(null); setCurrentPage('pedido'); };
-          const handleEditPedido = (pedido) => { const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]'); const allProducts = JSON.parse(localStorage.getItem('productos') || '[]'); let clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id); if (!clienteDelPedido) { alert('No se pudo encontrar el cliente para este pedido.'); return; } setSelectedCliente(clienteDelPedido); const itemsConProducto = pedido.items.map(item => ({ producto: allProducts.find(p => p.id === item.producto_id), cantidad: item.cantidad })).filter(item => item.producto); setCurrentPedido(itemsConProducto); setEditingPedido(pedido); setCurrentPage('summary'); };
-          const handleDeletePendingPedido = (pedidoId) => { let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); pedidos = pedidos.filter(p => p.id_local !== pedidoId); localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos)); };
-          const handleSaveCliente = async (clienteData) => { const token = localStorage.getItem('vendedor_token'); const isOnline = navigator.onLine; if (isOnline && token && clienteData.id && String(clienteData.id).startsWith('local_') === false) { try { const url = clienteData.id ? `${API_URL}/clientes/${clienteData.id}` : `${API_URL}/clientes`; const method = clienteData.id ? 'PUT' : 'POST'; const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(clienteData) }); if (!response.ok) throw new Error('Falló la conexión con el servidor.'); const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } }); const clientesActualizados = await clientesRes.json(); localStorage.setItem('clientes', JSON.stringify(clientesActualizados)); alert('¡Cliente guardado en el servidor!'); setCurrentPage('clientes'); setEditingCliente(null); return; } catch (e) { console.warn('Falló el guardado online, se guardará localmente.', e); } } let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); if (clienteData.id && String(clienteData.id).startsWith('local_') === false) { clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData, status: 'pending_update' } : c); } else if (clienteData.id && String(clienteData.id).startsWith('local_')) { clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData } : c); } else { clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' }); } localStorage.setItem('clientes', JSON.stringify(clientes)); alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.'); setCurrentPage('clientes'); setEditingCliente(null); };
-          const handleSync = async (isAuto = false) => { const syncToken = localStorage.getItem('vendedor_token'); if (!syncToken) { if (!isAuto) alert('Error de autenticación.'); return false; } if (!navigator.onLine) { if (!isAuto) alert('No hay conexión a internet.'); return false; } try { let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); const localIdToServerIdMap = {}; const clientesToCreate = clientes.filter(c => c.status === 'pending_create'); for (const cliente of clientesToCreate) { const { id: localId, status, ...clientePayload } = cliente; const response = await fetch(`${API_URL}/clientes`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) }); const newServerClient = await response.json(); if (response.ok) { localIdToServerIdMap[localId] = newServerClient.id; } } const clientesToUpdate = clientes.filter(c => c.status === 'pending_update'); for (const cliente of clientesToUpdate) { const { status, ...clientePayload } = cliente; await fetch(`${API_URL}/clientes/${cliente.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(clientePayload) }); } const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); if(pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { if(!isAuto) alert("No hay nada para sincronizar."); return true; } for (let pedido of pedidosPendientes) { if (localIdToServerIdMap[pedido.cliente_id]) { pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; } const { id_local, status, ...pedidoPayload } = pedido; await fetch(`${API_URL}/pedidos`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, body: JSON.stringify(pedidoPayload) }); } localStorage.setItem('pedidos_pendientes', '[]'); const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } }); localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); return true; } catch (error) { console.error('Error de red durante la sincronización:', error); if (!isAuto) alert('Ocurrió un error durante la sincronización.'); return false; } };
-          const handleCancelEdit = () => { setEditingPedido(null); setCurrentPedido([]); setCurrentPage('pendientes'); };
-          const handleProductSelect = (product) => { if (product.stock === 'No') { if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) { return; } } setProductForQuantity(product); };
-          const handleSaveQuantity = (productToSave, quantity) => { setCurrentPedido(currentPedido => { const existing = currentPedido.find(item => item.producto.id === productToSave.id); if (existing) { if (quantity > 0) { return currentPedido.map(item => item.producto.id === productToSave.id ? { ...item, cantidad: quantity } : item); } else { return currentPedido.filter(item => item.producto.id !== productToSave.id); } } else if (quantity > 0) { return [...currentPedido, { producto: productToSave, cantidad: quantity }]; } return currentPedido; }); setProductForQuantity(null); };
-          
-          // --- Lógica de Renderizado ---
-          const renderPage = () => {
-              switch (currentPage) {
-                case 'clientes':
-                  return <ClientesView onBack={() => setCurrentPage('home')} onSelectCliente={handleSelectCliente} onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} />;
-                case 'cliente_form':
-                  return <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />;
-                case 'pedido':
-                  return selectedCliente ? <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} /> : setCurrentPage('home');
-                case 'summary':
-                  return selectedCliente ? <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} /> : setCurrentPage('home');
-                case 'pendientes':
-                  return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
-                default:
-                  return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
-              }
-          };
-          
-          if (!token || !user) {
-              return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
-          }
+            const handleLogin = React.useCallback(async (email, password) => { 
+                setLoading(true); setError(null); 
+                try { 
+                    const loginResponse = await fetch(`${API_URL}/auth/login`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ email, password }) 
+                    }); 
+                    const data = await loginResponse.json(); 
+                    if (!loginResponse.ok) throw new Error(data.message || 'Error al iniciar sesión.'); 
+                    if (data.user.rol !== 'vendedor' && data.user.rol !== 'admin') throw new Error('Acceso denegado.'); 
+                    const tempToken = data.token; 
+                    const [clientesRes, productosRes] = await Promise.all([ 
+                        fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${tempToken}` } }), 
+                        fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${tempToken}` } }) 
+                    ]); 
+                    if (!clientesRes.ok || !productosRes.ok) throw new Error('Error al sincronizar datos.'); 
+                    localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); 
+                    localStorage.setItem('productos', JSON.stringify(await productosRes.json())); 
+                    localStorage.setItem('vendedor_token', tempToken); 
+                    localStorage.setItem('vendedor_user', JSON.stringify(data.user)); 
+                    setToken(tempToken); 
+                    setUser(data.user); 
+                } catch (err) { 
+                    setError(err.message); 
+                } finally { 
+                    setLoading(false); 
+                } 
+            }, []);
 
-          return (
-            <React.Fragment>
-              {renderPage()}
-              {productForQuantity && (
-                  <QuantityModal 
-                      product={productForQuantity}
-                      existingQuantity={(currentPedido.find(item => item.producto.id === productForQuantity.id) || {}).cantidad || 0}
-                      onSave={handleSaveQuantity}
-                      onCancel={() => setProductForQuantity(null)}
-                  />
-              )}
-            </React.Fragment>
-          );
+            const handleLogout = React.useCallback(() => { 
+                localStorage.clear(); 
+                setToken(null); 
+                setUser(null); 
+                setCurrentPage('home'); 
+                setSelectedCliente(null); 
+                setCurrentPedido([]); 
+            }, []);
+
+            const handleSelectCliente = (cliente) => { 
+                setSelectedCliente(cliente); 
+                const pedidoEnProgreso = localStorage.getItem(`pedido_progreso_${cliente.id}`);
+                if (pedidoEnProgreso) {
+                    setCurrentPedido(JSON.parse(pedidoEnProgreso));
+                } else {
+                    setCurrentPedido([]);
+                }
+                setEditingPedido(null); 
+                setCurrentPage('pedido'); 
+            };
+
+            const handleEditPedido = (pedido) => { 
+                const allClientes = JSON.parse(localStorage.getItem('clientes') || '[]'); 
+                const allProducts = JSON.parse(localStorage.getItem('productos') || '[]'); 
+                let clienteDelPedido = allClientes.find(c => c.id === pedido.cliente_id); 
+                if (!clienteDelPedido) { 
+                    alert('No se pudo encontrar el cliente para este pedido.'); 
+                    return; 
+                } 
+                setSelectedCliente(clienteDelPedido); 
+                const itemsConProducto = pedido.items.map(item => ({ 
+                    producto: allProducts.find(p => p.id === item.producto_id), 
+                    cantidad: item.cantidad 
+                })).filter(item => item.producto); 
+                setCurrentPedido(itemsConProducto); 
+                setEditingPedido(pedido); 
+                setCurrentPage('summary'); 
+            };
+
+            const handleDeletePendingPedido = (pedidoId) => { 
+                let pedidos = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); 
+                pedidos = pedidos.filter(p => p.id_local !== pedidoId); 
+                localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidos)); 
+            };
+
+            const handleSaveCliente = async (clienteData) => { 
+                const token = localStorage.getItem('vendedor_token'); 
+                const isOnline = navigator.onLine; 
+                if (isOnline && token && clienteData.id && String(clienteData.id).startsWith('local_') === false) { 
+                    try { 
+                        const url = clienteData.id ? `${API_URL}/clientes/${clienteData.id}` : `${API_URL}/clientes`; 
+                        const method = clienteData.id ? 'PUT' : 'POST'; 
+                        const response = await fetch(url, { 
+                            method: method, 
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                            body: JSON.stringify(clienteData) 
+                        }); 
+                        if (!response.ok) throw new Error('Falló la conexión con el servidor.'); 
+                        const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${token}` } }); 
+                        const clientesActualizados = await clientesRes.json(); 
+                        localStorage.setItem('clientes', JSON.stringify(clientesActualizados)); 
+                        alert('¡Cliente guardado en el servidor!'); 
+                        setCurrentPage('clientes'); 
+                        setEditingCliente(null); 
+                        return; 
+                    } catch (e) { 
+                        console.warn('Falló el guardado online, se guardará localmente.', e); 
+                    } 
+                } 
+                let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); 
+                if (clienteData.id && String(clienteData.id).startsWith('local_') === false) { 
+                    clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData, status: 'pending_update' } : c); 
+                } else if (clienteData.id && String(clienteData.id).startsWith('local_')) { 
+                    clientes = clientes.map(c => c.id === clienteData.id ? { ...c, ...clienteData } : c); 
+                } else { 
+                    clientes.push({ ...clienteData, id: `local_${Date.now()}`, status: 'pending_create' }); 
+                } 
+                localStorage.setItem('clientes', JSON.stringify(clientes)); 
+                alert('Cliente guardado localmente. Sincroniza cuando tengas conexión.'); 
+                setCurrentPage('clientes'); 
+                setEditingCliente(null); 
+            };
+
+            const handleSync = async (isAuto = false) => { 
+                const syncToken = localStorage.getItem('vendedor_token'); 
+                if (!syncToken) { 
+                    if (!isAuto) alert('Error de autenticación.'); 
+                    return false; 
+                } 
+                if (!navigator.onLine) { 
+                    if (!isAuto) alert('No hay conexión a internet.'); 
+                    return false; 
+                } 
+                try { 
+                    let clientes = JSON.parse(localStorage.getItem('clientes') || '[]'); 
+                    const localIdToServerIdMap = {}; 
+                    const clientesToCreate = clientes.filter(c => c.status === 'pending_create'); 
+                    for (const cliente of clientesToCreate) { 
+                        const { id: localId, status, ...clientePayload } = cliente; 
+                        const response = await fetch(`${API_URL}/clientes`, { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, 
+                            body: JSON.stringify(clientePayload) 
+                        }); 
+                        const newServerClient = await response.json(); 
+                        if (response.ok) { 
+                            localIdToServerIdMap[localId] = newServerClient.id; 
+                        } 
+                    } 
+                    const clientesToUpdate = clientes.filter(c => c.status === 'pending_update'); 
+                    for (const cliente of clientesToUpdate) { 
+                        const { status, ...clientePayload } = cliente; 
+                        await fetch(`${API_URL}/clientes/${cliente.id}`, { 
+                            method: 'PUT', 
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, 
+                            body: JSON.stringify(clientePayload) 
+                        }); 
+                    } 
+                    const pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]'); 
+                    if(pedidosPendientes.length === 0 && clientesToCreate.length === 0 && clientesToUpdate.length === 0) { 
+                        if(!isAuto) alert("No hay nada para sincronizar."); 
+                        return true; 
+                    } 
+                    for (let pedido of pedidosPendientes) { 
+                        if (localIdToServerIdMap[pedido.cliente_id]) { 
+                            pedido.cliente_id = localIdToServerIdMap[pedido.cliente_id]; 
+                        } 
+                        const { id_local, status, ...pedidoPayload } = pedido; 
+                        await fetch(`${API_URL}/pedidos`, { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${syncToken}` }, 
+                            body: JSON.stringify(pedidoPayload) 
+                        }); 
+                    } 
+                    localStorage.setItem('pedidos_pendientes', '[]'); 
+                    const clientesRes = await fetch(`${API_URL}/clientes`, { headers: { 'Authorization': `Bearer ${syncToken}` } }); 
+                    localStorage.setItem('clientes', JSON.stringify(await clientesRes.json())); 
+                    return true; 
+                } catch (error) { 
+                    console.error('Error de red durante la sincronización:', error); 
+                    if (!isAuto) alert('Ocurrió un error durante la sincronización.'); 
+                    return false; 
+                } 
+            };
+
+            const handleCancelEdit = () => { 
+                setEditingPedido(null); 
+                setCurrentPedido([]); 
+                setCurrentPage('pendientes'); 
+            };
+
+            const handleProductSelect = (product) => { 
+                if (product.stock === 'No') { 
+                    if (!window.confirm('Este producto no tiene stock. ¿Desea agregarlo de todas formas?')) { 
+                        return; 
+                    } 
+                } 
+                setProductForQuantity(product); 
+            };
+
+            const handleSaveQuantity = (productToSave, quantity) => { 
+                setCurrentPedido(currentPedido => { 
+                    const existing = currentPedido.find(item => item.producto.id === productToSave.id); 
+                    if (existing) { 
+                        if (quantity > 0) { 
+                            return currentPedido.map(item => item.producto.id === productToSave.id ? { ...item, cantidad: quantity } : item); 
+                        } else { 
+                            return currentPedido.filter(item => item.producto.id !== productToSave.id); 
+                        } 
+                    } else if (quantity > 0) { 
+                        return [...currentPedido, { producto: productToSave, cantidad: quantity }]; 
+                    } 
+                    return currentPedido; 
+                }); 
+                setProductForQuantity(null); 
+            };
+
+            const handleSavePedido = (notas) => {
+                const clienteData = selectedCliente;
+                let nuevoPedido;
+                let pedidosPendientes = JSON.parse(localStorage.getItem('pedidos_pendientes') || '[]');
+
+                if (editingPedido) {
+                    nuevoPedido = { ...editingPedido, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas };
+                    pedidosPendientes = pedidosPendientes.map(p => p.id_local === editingPedido.id_local ? nuevoPedido : p);
+                    localStorage.setItem('pedidos_pendientes', JSON.stringify(pedidosPendientes));
+                } else {
+                    nuevoPedido = { id_local: Date.now(), cliente_id: clienteData.id, items: currentPedido.map(item => ({ producto_id: item.producto.id, cantidad: item.cantidad })), notas_entrega: notas, fecha: new Date().toISOString(), status: 'pending_sync' };
+                    manageLocalPedidos(nuevoPedido);
+                    scheduleAutoSync();
+                }
+                
+                try {
+                    generateAndSavePDF(nuevoPedido, clienteData);
+                    alert('¡Pedido guardado localmente y PDF generado!');
+                } catch(e) {
+                    console.error("Error generando PDF:", e);
+                    alert('Pedido guardado localmente, pero hubo un error al generar el PDF.');
+                }
+                
+                localStorage.removeItem(`pedido_progreso_${selectedCliente.id}`);
+                setCurrentPage('home');
+                setEditingPedido(null);
+                setCurrentPedido([]);
+            };
+
+            // --- Lógica de Renderizado ---
+            const renderPage = () => {
+                switch (currentPage) {
+                    case 'clientes':
+                        return <ClientesView 
+                            onBack={() => setCurrentPage('home')} 
+                            onSelectCliente={handleSelectCliente} 
+                            onEditCliente={(c) => { setEditingCliente(c); setCurrentPage('cliente_form'); }} 
+                            onAddCliente={() => { setEditingCliente(null); setCurrentPage('cliente_form'); }} 
+                            onShowHistory={(c) => { setSelectedCliente(c); setCurrentPage('historial'); }} 
+                        />;
+                    case 'historial':
+                        return <HistorialClienteView cliente={selectedCliente} onBack={() => setCurrentPage('clientes')} />;
+                    case 'cliente_form':
+                        return <ClienteFormView onBack={() => setCurrentPage('clientes')} cliente={editingCliente} onSave={handleSaveCliente} />;
+                    case 'pedido':
+                        return selectedCliente ? <PedidoView cliente={selectedCliente} onBack={(cart) => { setCurrentPedido(cart); setCurrentPage('clientes'); }} onShowCart={() => setCurrentPage('summary')} cart={currentPedido} onProductSelect={handleProductSelect} /> : setCurrentPage('home');
+                    case 'summary':
+                        return selectedCliente ? <PedidoSummaryView cliente={selectedCliente} pedido={currentPedido} setPedido={setCurrentPedido} onBack={() => setCurrentPage('pedido')} onSave={handleSavePedido} editingPedido={editingPedido} onCancelEdit={handleCancelEdit} onAddMoreProducts={() => setCurrentPage('pedido')} /> : setCurrentPage('home');
+                    case 'pendientes':
+                        return <PedidosPendientesView onBack={() => setCurrentPage('home')} onSync={handleSync} onEditPedido={handleEditPedido} onDeletePedido={handleDeletePendingPedido} />;
+                    default:
+                        return <VendedorHomePage user={user} onLogout={handleLogout} setCurrentPage={setCurrentPage} />;
+                }
+            };
+
+            if (!token || !user) {
+                return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
+            }
+
+            return (
+                <React.Fragment>
+                    {renderPage()}
+                    {productForQuantity && (
+                        <QuantityModal 
+                            product={productForQuantity}
+                            existingQuantity={(currentPedido.find(item => item.producto.id === productForQuantity.id) || {}).cantidad || 0}
+                            onSave={handleSaveQuantity}
+                            onCancel={() => setProductForQuantity(null)}
+                        />
+                    )}
+                </React.Fragment>
+            );
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));
